@@ -16,6 +16,7 @@ create table users (
   id uuid primary key,
   school_id uuid references schools(id),
   role_id uuid references roles(id),
+  role_name text,
   full_name text not null,
   email text unique not null,
   created_at timestamptz default now()
