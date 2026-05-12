@@ -36,10 +36,17 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       if (signUpError) {
         setError(signUpError.message);
       } else if (data.user) {
+        const { data: roleRow } = await supabase
+          .from("roles")
+          .select("id")
+          .eq("name", role)
+          .single();
+
         await supabase.from("users").upsert({
           id: data.user.id,
           email,
           full_name: fullName,
+          role_id: roleRow?.id ?? null,
           role_name: role
         });
         router.push("/dashboard");
