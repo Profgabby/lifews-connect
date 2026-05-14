@@ -20,6 +20,9 @@ const roles = [
 
 type Role = (typeof roles)[number];
 
+
+type Role = (typeof roles)[number];
+
 type Profile = {
   full_name: string;
   role: Role;
@@ -44,6 +47,9 @@ const getDashboardRoute = (role?: string | null) => {
   if (!role) return "/dashboard";
   return `/dashboard?role=${encodeURIComponent(role)}`;
 };
+import { FormEvent, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -75,10 +81,14 @@ export default function AuthPage() {
   }, [router]);
 
   async function onAuthSubmit(event: FormEvent<HTMLFormElement>) {
+  const heading = useMemo(() => (mode === "login" ? "Login" : "Sign Up"), [mode]);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setMessage(null);
     setError(null);
+
     const supabase = createClient();
 
     try {
@@ -119,6 +129,10 @@ export default function AuthPage() {
         .select("*")
         .eq("id", signInData.user.id)
         .maybeSingle();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) return setError(signInError.message);
+
+      const { data: existing } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
       const incomplete = !existing || !existing.full_name || !existing.role;
       if (incomplete) {
         setNeedsOnboarding(true);
@@ -129,6 +143,21 @@ export default function AuthPage() {
 
       router.push(getDashboardRoute(existing.role));
       router.refresh();
+        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        if (signUpError) {
+          setError(signUpError.message);
+          return;
+        }
+        setMessage("Sign up successful. Check your email to verify your account.");
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
+      setMessage("Login successful.");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -189,6 +218,27 @@ export default function AuthPage() {
             <Button className="w-full" disabled={loading} type="submit">{loading ? "Saving profile..." : "Complete onboarding"}</Button>
           </form>
         )}
+        <form className="space-y-3" onSubmit={onSubmit}>
+          <input
+            className="w-full rounded-xl border p-2"
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+          <input
+            className="w-full rounded-xl border p-2"
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+          <Button className="w-full" disabled={loading} type="submit">
+            {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+          </Button>
+        </form>
 
         {message ? <p className="text-sm text-green-700">{message}</p> : null}
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -198,6 +248,17 @@ export default function AuthPage() {
             Switch to {mode === "login" ? "Sign Up" : "Login"}
           </button>
         )}
+        <button
+          className="text-sm text-primary"
+          onClick={() => {
+            setMode(mode === "login" ? "signup" : "login");
+            setMessage(null);
+            setError(null);
+          }}
+          type="button"
+        >
+          Switch to {mode === "login" ? "Sign Up" : "Login"}
+        </button>
       </section>
     </main>
   );
