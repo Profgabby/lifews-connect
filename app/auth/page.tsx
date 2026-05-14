@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -177,9 +176,7 @@ export default function AuthPage() {
             <input className="w-full rounded-xl border p-2" placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <Button className="w-full" disabled={loading} type="submit">{loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}</Button>
             {mode === "login" ? (
-              <Link className="block text-sm text-primary underline underline-offset-4" href="/forgot-password">
-                Forgot password?
-              </Link>
+              <a href="/forgot-password">Forgot password?</a>
             ) : null}
           </form>
         ) : (
