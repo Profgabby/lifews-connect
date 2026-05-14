@@ -8,6 +8,7 @@ create table if not exists public.profiles (
   phone text,
   country text,
   state text,
+  onboarding_completed boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint profiles_role_check check (
@@ -43,14 +44,17 @@ for each row execute function public.set_profiles_updated_at();
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Profiles are viewable by owner" on public.profiles;
 create policy "Profiles are viewable by owner"
 on public.profiles for select
 using (auth.uid() = id);
 
+drop policy if exists "Profiles can be inserted by owner" on public.profiles;
 create policy "Profiles can be inserted by owner"
 on public.profiles for insert
 with check (auth.uid() = id);
 
+drop policy if exists "Profiles can be updated by owner" on public.profiles;
 create policy "Profiles can be updated by owner"
 on public.profiles for update
 using (auth.uid() = id)

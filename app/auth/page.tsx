@@ -20,6 +20,29 @@ const roles = [
 
 type Role = (typeof roles)[number];
 
+type Profile = {
+  full_name: string;
+  role: Role;
+  organization_name: string;
+  school_name: string;
+  phone: string;
+  country: string;
+  state: string;
+};
+
+const emptyProfile: Profile = {
+  full_name: "",
+  role: "teacher",
+  organization_name: "",
+  school_name: "",
+  phone: "",
+  country: "",
+  state: ""
+};
+
+
+type Role = (typeof roles)[number];
+
 
 type Role = (typeof roles)[number];
 
@@ -109,6 +132,9 @@ export default function AuthPage() {
           state: profile.state || null
         });
 
+        setMessage("Signup successful. Continue onboarding to finish setup.");
+        router.push("/onboarding");
+        router.refresh();
         setMessage("Signup successful. Complete your profile to continue.");
         setNeedsOnboarding(true);
         return;
@@ -129,6 +155,11 @@ export default function AuthPage() {
         .select("*")
         .eq("id", signInData.user.id)
         .maybeSingle();
+      const incomplete = !existing || !existing.full_name || !existing.role;
+      if (incomplete) {
+        setMessage("Login successful. Redirecting to onboarding.");
+        router.push("/onboarding");
+        router.refresh();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) return setError(signInError.message);
 
