@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export default function ResetPasswordPage() {
-  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
     setMessage(null);
     setError(null);
 
-    if (password !== confirmPassword) {
+    if (newPassword !== confirmPassword) {
       setError("Passwords do not match.");
       setLoading(false);
       return;
@@ -27,14 +27,14 @@ export default function ResetPasswordPage() {
     const supabase = createClient();
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) {
         setError(updateError.message);
         return;
       }
 
       setMessage("Password updated successfully. You can now log in with your new password.");
-      setPassword("");
+      setNewPassword("");
       setConfirmPassword("");
     } catch {
       setError("Unable to reset password. Please try again.");
@@ -52,8 +52,8 @@ export default function ResetPasswordPage() {
             className="w-full rounded-xl border p-2"
             placeholder="New password"
             type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
             required
             minLength={6}
           />
