@@ -20,6 +20,9 @@ const roles = [
 
 type Role = (typeof roles)[number];
 
+
+type Role = (typeof roles)[number];
+
 type Profile = {
   full_name: string;
   role: Role;
@@ -111,6 +114,21 @@ export default function AuthPage() {
         return;
       }
 
+      const {
+        data: signInData,
+        error: signInError
+      } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (signInError) return setError(signInError.message);
+      if (!signInData.user) return setError("Login succeeded but no user was returned.");
+
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", signInData.user.id)
+        .maybeSingle();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) return setError(signInError.message);
 
