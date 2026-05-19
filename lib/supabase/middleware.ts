@@ -21,9 +21,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const path = request.nextUrl.pathname;
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
+  const path = request.nextUrl.pathname;
   const protectedRoutes = ["/dashboard", "/pillars", "/library", "/garden", "/announcements", "/messages", "/settings", "/onboarding"];
   const isProtected = protectedRoutes.some((route) => path.startsWith(route));
 
@@ -33,27 +35,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role,onboarding_completed")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const needsOnboarding = !profile || !profile.onboarding_completed || !profile.role;
-
-    if (needsOnboarding && path !== "/onboarding" && isProtected) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/onboarding";
-      return NextResponse.redirect(url);
-    }
-
-    if (!needsOnboarding && ["/login", "/signup", "/auth", "/onboarding"].includes(path)) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      url.search = `?role=${encodeURIComponent(profile.role)}`;
-      return NextResponse.redirect(url);
-    }
+  if (user && ["/login", "/signup", "/auth"].includes(path)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
   return response;
