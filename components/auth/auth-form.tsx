@@ -27,13 +27,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     try {
       const supabase = createClient();
 
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError("Missing Supabase environment variables. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
-        return;
-      }
-
       if (mode === "signup") {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -47,30 +42,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           return;
         }
 
-        if (data.user) {
-          const { data: roleRow } = await supabase.from("roles").select("id").eq("name", role).single();
-
-          await supabase.from("users").upsert({
-            id: data.user.id,
-            email,
-            full_name: fullName,
-            role_id: roleRow?.id ?? null,
-            role_name: role
-          });
-
-          setSuccess(
-            data.session
-              ? "Signup successful. Your account is ready and you are now signed in."
-              : "Signup successful. Check your email to confirm your account before login."
-          );
-
-          if (data.session) {
-            router.push("/dashboard");
-            router.refresh();
-          }
-        } else {
-          setError("Signup returned no user. Please try again.");
-        }
+        setSuccess("Signup successful. Check your email to confirm your account before login.");
       } else {
         const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -92,52 +64,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   };
 
   return (
-    <section className="card w-full p-6 space-y-4">
-    const supabase = createClient();
-
-    if (mode === "signup") {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: fullName, role }
-        }
-      });
-
-      if (signUpError) {
-        setError(signUpError.message);
-      } else if (data.user) {
-        const { data: roleRow } = await supabase
-          .from("roles")
-          .select("id")
-          .eq("name", role)
-          .single();
-
-        await supabase.from("users").upsert({
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          role_id: roleRow?.id ?? null,
-          role_name: role
-        });
-        router.push("/dashboard");
-        router.refresh();
-      }
-    } else {
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-      if (loginError) {
-        setError(loginError.message);
-      } else {
-        router.push("/dashboard");
-        router.refresh();
-      }
-    }
-
-    setLoading(false);
-  };
-
-  return (
     <section className="card w-full max-w-md p-6 space-y-4">
       <h1 className="text-2xl font-semibold text-primary">{mode === "login" ? "Login" : "Create account"}</h1>
       <form className="space-y-3" onSubmit={handleSubmit}>
@@ -146,7 +72,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         )}
         <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border p-2" placeholder="Email" type="email" required />
         <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border p-2" placeholder="Password" type="password" required minLength={6} />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border p-2" placeholder="Password" type="password" required />
         {mode === "signup" && (
           <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full rounded-xl border p-2" required>
             {roles.map((item) => (
@@ -161,8 +86,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <Button className="w-full" disabled={loading} type="submit">
           {loading ? (mode === "signup" ? "Creating account..." : "Signing in...") : mode === "login" ? "Sign In" : "Sign Up"}
         </Button>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <Button className="w-full" disabled={loading}>{loading ? "Please wait..." : mode === "login" ? "Sign In" : "Sign Up"}</Button>
       </form>
       <p className="text-sm text-slate-600">
         {mode === "login" ? "Need an account?" : "Already have an account?"}{" "}
