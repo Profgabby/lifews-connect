@@ -9,3 +9,10 @@ body {
 .card {
   @apply rounded-2xl bg-white shadow-sm border border-slate-100;
 }
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+
+.lc-page { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; font-family: 'DM Sans', sans-serif; }
+@media (max-width: 768px) { .lc-page { grid-template-columns: 1fr; } .lc-panel-left { display: none; } }
+.lc-panel-left { background: #2D6A2D; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px; }
+.lc-panel-right { background: #F5F5E8; display: flex; align-items: center; justify-content: center; padding: 48px 36px; overflow-y: auto; }
+.lc-card { width: 100%; max-width: 420px; }
