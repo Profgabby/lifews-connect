@@ -1,4 +1,4 @@
 {
-  "/home-garden/page": "app/home-garden/page.js",
-  "/settings/page": "app/settings/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/library/page": "app/library/page.js"
 }
