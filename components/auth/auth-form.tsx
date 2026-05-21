@@ -23,15 +23,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setLoading(true);
     setError(null);
     setSuccess(null);
-
     try {
       const supabase = createClient();
-
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError("Missing Supabase environment variables.");
-        return;
-      }
-
       if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -41,136 +34,58 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             data: { full_name: fullName, role },
           },
         });
-
-        if (signUpError) {
-          setError(`Signup failed: ${signUpError.message}`);
-          return;
-        }
-
+        if (signUpError) { setError(signUpError.message); return; }
         if (data.user) {
-          const { data: roleRow } = await supabase
-            .from("roles")
-            .select("id")
-            .eq("name", role)
-            .single();
-
-          await supabase.from("users").upsert({
-            id: data.user.id,
-            email,
-            full_name: fullName,
-            role_id: roleRow?.id ?? null,
-            role_name: role,
-          });
-
-          setSuccess(
-            data.session
-              ? "Signup successful. You are now signed in."
-              : "Signup successful. Check your email to confirm your account."
-          );
-
-          if (data.session) {
-            router.push("/dashboard");
-            router.refresh();
-          }
+          const { data: roleRow } = await supabase.from("roles").select("id").eq("name", role).single();
+          await supabase.from("users").upsert({ id: data.user.id, email, full_name: fullName, role_id: roleRow?.id ?? null, role_name: role });
+          setSuccess(data.session ? "Signed in successfully." : "Check your email to confirm your account.");
+          if (data.session) { router.push("/dashboard"); router.refresh(); }
         } else {
           setError("Signup returned no user. Please try again.");
         }
       } else {
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (loginError) {
-          setError(`Login failed: ${loginError.message}`);
-          return;
-        }
-
-        setSuccess("Login successful. Redirecting...");
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginError) { setError(loginError.message); return; }
         router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error.";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
       setLoading(false);
     }
   };
 
-  const linkHref = mode === "login" ? "/signup" : "/login";
-  const linkLabel = mode === "login" ? "Sign up" : "Login";
-  const promptText = mode === "login" ? "Need an account?" : "Already have an account?";
+  const linkHref: string = mode === "login" ? "/signup" : "/login";
 
   return (
     <section className="card w-full max-w-md p-6 space-y-4">
       <h1 className="text-2xl font-semibold text-primary">
         {mode === "login" ? "Login" : "Create account"}
       </h1>
-
       <form className="space-y-3" onSubmit={handleSubmit}>
         {mode === "signup" && (
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full rounded-xl border p-2"
-            placeholder="Full name"
-            required
-          />
+          <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-xl border p-2" placeholder="Full name" required />
         )}
-
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl border p-2"
-          placeholder="Email"
-          type="email"
-          required
-        />
-
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border p-2"
-          placeholder="Password"
-          type="password"
-          required
-          minLength={6}
-        />
-
+        <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border p-2" placeholder="Email" type="email" required />
+        <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border p-2" placeholder="Password" type="password" required minLength={6} />
         {mode === "signup" && (
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full rounded-xl border p-2"
-            required
-          >
+          <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full rounded-xl border p-2" required>
             {roles.map((item) => (
-              <option key={item} value={item}>
-                {item.replace("_", " ")}
-              </option>
+              <option key={item} value={item}>{item.replace("_", " ")}</option>
             ))}
           </select>
         )}
-
-        {error && (
-          <p className="rounded-lg bg-red-50 p-2 text-sm text-red-700">{error}</p>
-        )}
-        {success && (
-          <p className="rounded-lg bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p>
-        )}
-
+        {error && <p className="rounded-lg bg-red-50 p-2 text-sm text-red-700">{error}</p>}
+        {success && <p className="rounded-lg bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p>}
         <Button className="w-full" disabled={loading} type="submit">
-          {loading
-            ? mode === "signup" ? "Creating account..." : "Signing in..."
-            : mode === "login" ? "Sign In" : "Sign Up"}
+          {loading ? (mode === "signup" ? "Creating account..." : "Signing in...") : (mode === "login" ? "Sign In" : "Sign Up")}
         </Button>
       </form>
-
       <p className="text-sm text-slate-600">
-        {promptText}{" "}
+        {mode === "login" ? "Need an account?" : "Already have an account?"}{" "}
         <Link href={linkHref} className="text-primary font-medium">
-          {linkLabel}
+          {mode === "login" ? "Sign up" : "Login"}
         </Link>
       </p>
     </section>
