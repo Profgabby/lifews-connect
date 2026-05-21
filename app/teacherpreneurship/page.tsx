@@ -57,8 +57,8 @@ const G: Record<string, React.CSSProperties> = {
   pill:       { fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)" },
   // Tabs
   tabBar:     { background: "#fff", borderBottom: "1px solid #e8e0cc", padding: "0 40px", display: "flex", gap: 0 },
-  tabOn:      { padding: "16px 20px", borderBottom: "2px solid #2D6A2D", color: "#2D6A2D", fontSize: 14, fontWeight: 500, cursor: "pointer", background: "none", border: "none", borderBottom: "2px solid #2D6A2D", fontFamily: "'DM Sans', sans-serif" },
-  tabOff:     { padding: "16px 20px", borderBottom: "2px solid transparent", color: "#888", fontSize: 14, cursor: "pointer", background: "none", border: "none", borderBottom: "2px solid transparent", fontFamily: "'DM Sans', sans-serif" },
+  tabOn:      { padding: "16px 20px", borderBottom: "2px solid #2D6A2D", color: "#2D6A2D", fontSize: 14, fontWeight: 500, cursor: "pointer", background: "none", border: "none", fontFamily: "'DM Sans', sans-serif" },
+  tabOff:     { padding: "16px 20px", color: "#888", fontSize: 14, cursor: "pointer", background: "none", border: "none", fontFamily: "'DM Sans', sans-serif" },
   content:    { maxWidth: 1000, margin: "0 auto", padding: "32px 40px" },
   // Cards
   card:       { background: "#fff", border: "1px solid #e8e0cc", borderRadius: 14, padding: 24, marginBottom: 16 },
