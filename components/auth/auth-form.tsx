@@ -56,7 +56,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     }
   };
 
-  const linkHref: string = mode === "login" ? "/signup" : "/login";
+  const linkHref = "/signup";
+  const linkHrefLogin = "/login";
 
   return (
     <section className="card w-full max-w-md p-6 space-y-4">
@@ -84,7 +85,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       </form>
       <p className="text-sm text-slate-600">
         {mode === "login" ? "Need an account?" : "Already have an account?"}{" "}
-        <Link href={linkHref} className="text-primary font-medium">
+        <Link href={(mode === "login" ? "/signup" : "/login") as any} className="text-primary font-medium">
           {mode === "login" ? "Sign up" : "Login"}
         </Link>
       </p>

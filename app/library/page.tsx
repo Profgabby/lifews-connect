@@ -173,7 +173,7 @@ export default function LibraryPage() {
       .select("*")
       .eq("is_published", true)
       .order("created_at", { ascending: false });
-    const real = (data || []).map(l => ({ ...l, teacher: "You", grade: l.class_level || "Primary 1", track: l.tags?.[0] || "garden-soil", garden_type: "Raised bed" }));
+    const real = (data || []).map((l: any) => ({ ...l, teacher: "You", grade: l.class_level || "Primary 1", track: l.tags?.[0] || "garden-soil", garden_type: "Raised bed" }));
     setLessons([...real, ...SAMPLE_LESSONS] as Lesson[]);
     setLoading(false);
   }

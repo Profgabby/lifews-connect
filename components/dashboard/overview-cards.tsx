@@ -1,16 +1,6 @@
 "use client";
 
-interface StatCard {
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  value: string;
-  label: string;
-  trend: string;
-  trendUp: boolean;
-}
-
-const STAT_CARDS: StatCard[] = [
+const STAT_CARDS = [
   { icon: "ti-book-open",   iconBg: "#f0f7ec", iconColor: "#2D6A2D", value: "8",  label: "Lessons this month",   trend: "↑ 2 from last month", trendUp: true },
   { icon: "ti-plant",       iconBg: "#faeeda", iconColor: "#854F0B", value: "24", label: "Crops tracked",         trend: "↑ 6 new this week",   trendUp: true },
   { icon: "ti-users",       iconBg: "#e6f1fb", iconColor: "#185FA5", value: "12", label: "Student participants",  trend: "Same as last week",   trendUp: false },
@@ -25,10 +15,10 @@ const ACTIVITY = [
 ];
 
 const TASKS = [
-  { done: true,  text: "Water the tomato beds",         badge: "Done",      badgeStyle: { background: "#f0f7ec", color: "#2D6A2D" } },
-  { done: false, text: "Submit weekly harvest log",     badge: "Due today", badgeStyle: { background: "#faeeda", color: "#854F0B" } },
-  { done: false, text: "Review AgriShine lesson 3",    badge: "Learning",  badgeStyle: { background: "#e6f1fb", color: "#185FA5" } },
-  { done: false, text: "Invite parents to garden day", badge: "Pending",   badgeStyle: { background: "#f5f5e8", color: "#888" } },
+  { done: true,  text: "Water the tomato beds",         badge: "Done",      badgeBg: "#f0f7ec", badgeColor: "#2D6A2D" },
+  { done: false, text: "Submit weekly harvest log",     badge: "Due today", badgeBg: "#faeeda", badgeColor: "#854F0B" },
+  { done: false, text: "Review AgriShine lesson 3",    badge: "Learning",  badgeBg: "#e6f1fb", badgeColor: "#185FA5" },
+  { done: false, text: "Invite parents to garden day", badge: "Pending",   badgeBg: "#f5f5f8", badgeColor: "#888" },
 ];
 
 const CROPS = [
@@ -38,178 +28,154 @@ const CROPS = [
 ];
 
 const QUICK_ACTIONS = [
-  { icon: "ti-plus",      label: "Log harvest" },
-  { icon: "ti-file-text", label: "New lesson" },
-  { icon: "ti-camera",    label: "Upload photo" },
-  { icon: "ti-send",      label: "Post update" },
+  { icon: "ti-plus",      label: "Log harvest",  href: "/garden" },
+  { icon: "ti-file-text", label: "New lesson",   href: "/teacherpreneurship" },
+  { icon: "ti-camera",    label: "Upload photo", href: "/garden" },
+  { icon: "ti-send",      label: "Post update",  href: "/announcements" },
 ];
 
 const PILLARS = [
-  { icon: "ti-sun",    bg: "#f0f7ec", color: "#2D6A2D", name: "AgriShine™",  desc: "School gardens & FEW systems",  href: "/pillars/agrishine" },
-  { icon: "ti-heart",  bg: "#faeeda", color: "#854F0B", name: "AgriAble™",   desc: "Inclusion & adaptive learning", href: "/pillars/agriable" },
-  { icon: "ti-rocket", bg: "#e6f1fb", color: "#185FA5", name: "AgriNext™",   desc: "STEM & youth green skills",     href: "/pillars/agrinext" },
-  { icon: "ti-world",  bg: "#eeedfe", color: "#534AB7", name: "AgriRoots™",  desc: "Culture, language & heritage",  href: "/pillars/agriroots" },
+  { icon: "ti-sun",    bg: "#f0f7ec", color: "#2D6A2D", name: "AgriShine™",  desc: "School gardens & FEW systems",  href: "/library?track=garden-soil" },
+  { icon: "ti-heart",  bg: "#faeeda", color: "#854F0B", name: "AgriAble™",   desc: "Inclusion & adaptive learning", href: "/home-garden" },
+  { icon: "ti-rocket", bg: "#e6f1fb", color: "#185FA5", name: "AgriNext™",   desc: "STEM & youth green skills",     href: "/library?track=stem-agric" },
+  { icon: "ti-world",  bg: "#eeedfe", color: "#534AB7", name: "AgriRoots™",  desc: "Culture, language & heritage",  href: "/library?track=food-heritage" },
 ];
+
+const card: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #e8e0cc",
+  borderRadius: 12,
+  padding: 18,
+};
 
 export function OverviewCards() {
   return (
-    <>
-      <style>{`
-        .oc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-        .oc-card { background: #fff; border: 1px solid #e8e0cc; border-radius: 12px; padding: 16px; }
-        .oc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-        .oc-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .oc-right-col { display: flex; flex-direction: column; gap: 16px; }
-        .oc-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .oc-card-title { font-size: 13px; font-weight: 500; color: #163816; font-family: 'DM Sans', sans-serif; }
-        .oc-card-action { font-size: 11px; color: #2D6A2D; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-        .oc-stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px; }
-        .oc-stat-val { font-family: 'DM Serif Display', serif; font-size: 26px; color: #163816; margin-bottom: 2px; }
-        .oc-stat-label { font-size: 12px; color: #888; font-family: 'DM Sans', sans-serif; }
-        .oc-stat-trend { font-size: 11px; margin-top: 4px; font-family: 'DM Sans', sans-serif; }
-        .oc-act-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f5f0e8; }
-        .oc-act-item:last-child { border-bottom: none; }
-        .oc-act-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-        .oc-act-text { font-size: 12px; color: #444; line-height: 1.45; font-family: 'DM Sans', sans-serif; }
-        .oc-act-time { font-size: 10px; color: #bbb; margin-top: 2px; font-family: 'DM Sans', sans-serif; }
-        .oc-task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f0e8; }
-        .oc-task-item:last-child { border-bottom: none; }
-        .oc-task-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #ccc; flex-shrink: 0; }
-        .oc-task-text { font-size: 12px; color: #444; flex: 1; font-family: 'DM Sans', sans-serif; }
-        .oc-task-text.done { text-decoration: line-through; color: #bbb; }
-        .oc-badge { font-size: 10px; padding: 2px 8px; border-radius: 5px; font-weight: 500; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
-        .oc-pillar-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f5f0e8; cursor: pointer; text-decoration: none; transition: background 0.15s; }
-        .oc-pillar-item:last-child { border-bottom: none; }
-        .oc-pillar-item:hover { background: #fafaf5; border-radius: 6px; padding-left: 4px; }
-        .oc-pillar-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-        .oc-pillar-name { font-size: 13px; font-weight: 500; color: #222; font-family: 'DM Sans', sans-serif; }
-        .oc-pillar-desc { font-size: 11px; color: #888; margin-top: 1px; font-family: 'DM Sans', sans-serif; }
-        .oc-prog-item { margin-bottom: 12px; }
-        .oc-prog-item:last-child { margin-bottom: 0; }
-        .oc-prog-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .oc-prog-label { font-size: 12px; color: #444; font-family: 'DM Sans', sans-serif; }
-        .oc-prog-val { font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif; }
-        .oc-prog-bar { height: 6px; background: #f0ece0; border-radius: 3px; overflow: hidden; }
-        .oc-prog-fill { height: 100%; border-radius: 3px; }
-        .oc-qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .oc-qa-btn { background: #F5F5E8; border: 1px solid #e0d8c8; border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.15s; }
-        .oc-qa-btn:hover { background: #e8f0e0; border-color: #b8dba8; }
-        .oc-qa-icon { font-size: 20px; color: #2D6A2D; margin-bottom: 4px; }
-        .oc-qa-label { font-size: 11px; color: #444; font-weight: 500; font-family: 'DM Sans', sans-serif; }
-        @media (max-width: 900px) {
-          .oc-stats { grid-template-columns: repeat(2, 1fr); }
-          .oc-two { grid-template-columns: 1fr; }
-          .oc-bottom { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 540px) {
-          .oc-stats { grid-template-columns: 1fr 1fr; }
-        }
-      `}</style>
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* Stat cards */}
-      <div className="oc-stats">
+      {/* ── Stat cards ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
         {STAT_CARDS.map((s) => (
-          <div key={s.label} className="oc-card">
-            <div className="oc-stat-icon" style={{ background: s.iconBg }}>
+          <div key={s.label} style={card}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: s.iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, marginBottom: 10 }}>
               <i className={`ti ${s.icon}`} style={{ color: s.iconColor }} aria-hidden="true" />
             </div>
-            <div className="oc-stat-val">{s.value}</div>
-            <div className="oc-stat-label">{s.label}</div>
-            <div className="oc-stat-trend" style={{ color: s.trendUp ? "#2D6A2D" : "#aaa" }}>{s.trend}</div>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, color: "#163816", marginBottom: 2 }}>{s.value}</div>
+            <div style={{ fontSize: 12, color: "#888" }}>{s.label}</div>
+            <div style={{ fontSize: 11, marginTop: 4, color: s.trendUp ? "#2D6A2D" : "#aaa" }}>{s.trend}</div>
           </div>
         ))}
       </div>
 
-      {/* Activity + Tasks */}
-      <div className="oc-two">
-        <div className="oc-card">
-          <div className="oc-card-header">
-            <span className="oc-card-title">Recent activity</span>
-            <a href="/announcements" className="oc-card-action">View all →</a>
+      {/* ── Activity + Tasks ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+
+        {/* Activity */}
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#163816" }}>Recent activity</span>
+            <a href="/announcements" style={{ fontSize: 11, color: "#2D6A2D", textDecoration: "none" }}>View all →</a>
           </div>
           {ACTIVITY.map((a, i) => (
-            <div key={i} className="oc-act-item">
-              <div className="oc-act-dot" style={{ background: a.color }} />
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 0", borderBottom: i < ACTIVITY.length - 1 ? "1px solid #f5f0e8" : "none" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: a.color, marginTop: 4, flexShrink: 0 }} />
               <div>
-                <div className="oc-act-text">{a.text}</div>
-                <div className="oc-act-time">{a.time}</div>
+                <div style={{ fontSize: 12, color: "#444", lineHeight: 1.45 }}>{a.text}</div>
+                <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>{a.time}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="oc-card">
-          <div className="oc-card-header">
-            <span className="oc-card-title">Today's tasks</span>
-            <span className="oc-card-action">Add task</span>
+        {/* Tasks */}
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#163816" }}>Today's tasks</span>
+            <span style={{ fontSize: 11, color: "#2D6A2D", cursor: "pointer" }}>Add task</span>
           </div>
           {TASKS.map((t, i) => (
-            <div key={i} className="oc-task-item">
-              <div
-                className="oc-task-check"
-                style={t.done ? { background: "#2D6A2D", borderColor: "#2D6A2D" } : {}}
-              />
-              <span className={`oc-task-text${t.done ? " done" : ""}`}>{t.text}</span>
-              <span className="oc-badge" style={t.badgeStyle}>{t.badge}</span>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < TASKS.length - 1 ? "1px solid #f5f0e8" : "none" }}>
+              <div style={{ width: 16, height: 16, borderRadius: 4, border: t.done ? "none" : "1.5px solid #ccc", background: t.done ? "#2D6A2D" : "transparent", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: t.done ? "#bbb" : "#444", flex: 1, textDecoration: t.done ? "line-through" : "none" }}>{t.text}</span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, fontWeight: 500, background: t.badgeBg, color: t.badgeColor, whiteSpace: "nowrap" as const }}>{t.badge}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Pillars + Garden progress + Quick actions */}
-      <div className="oc-bottom">
-        <div className="oc-card">
-          <div className="oc-card-header">
-            <span className="oc-card-title">Pillar modules</span>
+      {/* ── Pillars + Garden progress + Quick actions ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+        {/* Pillars */}
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#163816" }}>Pillar modules</span>
           </div>
           {PILLARS.map((p) => (
-            <a key={p.name} href={p.href} className="oc-pillar-item">
-              <div className="oc-pillar-icon" style={{ background: p.bg }}>
+            <a
+              key={p.name}
+              href={p.href}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: "1px solid #f5f0e8", textDecoration: "none" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#fafaf5"; (e.currentTarget as HTMLElement).style.borderRadius = "6px"; (e.currentTarget as HTMLElement).style.paddingLeft = "4px"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.paddingLeft = "0"; }}
+            >
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: p.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
                 <i className={`ti ${p.icon}`} style={{ color: p.color }} aria-hidden="true" />
               </div>
               <div>
-                <div className="oc-pillar-name">{p.name}</div>
-                <div className="oc-pillar-desc">{p.desc}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#222" }}>{p.name}</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>{p.desc}</div>
               </div>
               <i className="ti ti-chevron-right" style={{ marginLeft: "auto", color: "#ccc", fontSize: 14 }} aria-hidden="true" />
             </a>
           ))}
         </div>
 
-        <div className="oc-right-col">
-          <div className="oc-card">
-            <div className="oc-card-header">
-              <span className="oc-card-title">Garden progress</span>
-              <a href="/garden" className="oc-card-action">View garden →</a>
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Garden progress */}
+          <div style={card}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#163816" }}>Garden progress</span>
+              <a href="/garden" style={{ fontSize: 11, color: "#2D6A2D", textDecoration: "none" }}>View garden →</a>
             </div>
             {CROPS.map((c) => (
-              <div key={c.name} className="oc-prog-item">
-                <div className="oc-prog-header">
-                  <span className="oc-prog-label">{c.name}</span>
-                  <span className="oc-prog-val" style={{ color: c.color }}>{c.pct}%</span>
+              <div key={c.name} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ fontSize: 12, color: "#444" }}>{c.name}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: c.color }}>{c.pct}%</span>
                 </div>
-                <div className="oc-prog-bar">
-                  <div className="oc-prog-fill" style={{ width: `${c.pct}%`, background: c.color }} />
+                <div style={{ height: 6, background: "#f0ece0", borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${c.pct}%`, background: c.color, borderRadius: 3 }} />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="oc-card">
-            <div className="oc-card-header">
-              <span className="oc-card-title">Quick actions</span>
+          {/* Quick actions */}
+          <div style={card}>
+            <div style={{ marginBottom: 14 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#163816" }}>Quick actions</span>
             </div>
-            <div className="oc-qa-grid">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {QUICK_ACTIONS.map((q) => (
-                <div key={q.label} className="oc-qa-btn">
-                  <div className="oc-qa-icon"><i className={`ti ${q.icon}`} aria-hidden="true" /></div>
-                  <div className="oc-qa-label">{q.label}</div>
-                </div>
+                <a
+                  key={q.label}
+                  href={q.href}
+                  style={{ background: "#F5F5E8", border: "1px solid #e0d8c8", borderRadius: 10, padding: 12, textAlign: "center" as const, cursor: "pointer", textDecoration: "none", display: "block" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#e8f0e0"; (e.currentTarget as HTMLElement).style.borderColor = "#b8dba8"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F5F5E8"; (e.currentTarget as HTMLElement).style.borderColor = "#e0d8c8"; }}
+                >
+                  <div style={{ fontSize: 20, color: "#2D6A2D", marginBottom: 4 }}>
+                    <i className={`ti ${q.icon}`} aria-hidden="true" />
+                  </div>
+                  <div style={{ fontSize: 11, color: "#444", fontWeight: 500 }}>{q.label}</div>
+                </a>
               ))}
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -29,18 +29,18 @@ declare namespace __next_route_internal_types__ {
     S extends `${string}${SearchOrHash}` ? never : S
 
   type StaticRoutes = 
-    | `/`
     | `/announcements`
-    | `/auth`
     | `/auth/callback`
     | `/dashboard`
     | `/garden`
     | `/home-garden`
     | `/library`
-    | `/messages`
+    | `/auth`
+    | `/`
     | `/pillars`
     | `/reset-password`
     | `/schools/register`
+    | `/messages`
     | `/settings`
     | `/students`
     | `/teacherpreneurship`

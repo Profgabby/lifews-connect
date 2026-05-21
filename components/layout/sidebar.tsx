@@ -16,7 +16,7 @@ export function Sidebar() {
       <h2 className="text-xl font-bold text-primary mb-6">LIFEWS CONNECT</h2>
       <nav className="space-y-1">
         {nav.map(([label, href]) => (
-          <Link key={href} href={href} className="block rounded-lg px-3 py-2 text-sm hover:bg-accent">
+          <Link key={href} href={href as any} className="block rounded-lg px-3 py-2 text-sm hover:bg-accent">
             {label}
           </Link>
         ))}
