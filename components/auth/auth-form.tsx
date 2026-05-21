@@ -28,7 +28,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       const supabase = createClient();
 
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError("Missing Supabase environment variables. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
+        setError("Missing Supabase environment variables.");
         return;
       }
 
@@ -38,8 +38,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: { full_name: fullName, role }
-          }
+            data: { full_name: fullName, role },
+          },
         });
 
         if (signUpError) {
@@ -59,13 +59,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             email,
             full_name: fullName,
             role_id: roleRow?.id ?? null,
-            role_name: role
+            role_name: role,
           });
 
           setSuccess(
             data.session
-              ? "Signup successful. Your account is ready and you are now signed in."
-              : "Signup successful. Check your email to confirm your account before login."
+              ? "Signup successful. You are now signed in."
+              : "Signup successful. Check your email to confirm your account."
           );
 
           if (data.session) {
@@ -76,30 +76,38 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           setError("Signup returned no user. Please try again.");
         }
       } else {
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
         if (loginError) {
           setError(`Login failed: ${loginError.message}`);
           return;
         }
 
-        setSuccess("Login successful. Redirecting to dashboard...");
+        setSuccess("Login successful. Redirecting...");
         router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown authentication error.";
+      const message = err instanceof Error ? err.message : "Unknown error.";
       setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const linkHref = mode === "login" ? "/signup" : "/login";
+  const linkLabel = mode === "login" ? "Sign up" : "Login";
+  const promptText = mode === "login" ? "Need an account?" : "Already have an account?";
+
   return (
     <section className="card w-full max-w-md p-6 space-y-4">
       <h1 className="text-2xl font-semibold text-primary">
         {mode === "login" ? "Login" : "Create account"}
       </h1>
+
       <form className="space-y-3" onSubmit={handleSubmit}>
         {mode === "signup" && (
           <input
@@ -110,6 +118,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             required
           />
         )}
+
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -118,6 +127,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           type="email"
           required
         />
+
         <input
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -127,6 +137,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           required
           minLength={6}
         />
+
         {mode === "signup" && (
           <select
             value={role}
@@ -155,13 +166,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             : mode === "login" ? "Sign In" : "Sign Up"}
         </Button>
       </form>
+
       <p className="text-sm text-slate-600">
-        {mode === "login" ? "Need an account?" : "Already have an account?"}{" "}
-        <Link
-          className="text-primary font-medium"
-          href={mode === "login" ? "/signup" : "/login"}
-        >
-          {mode === "login" ? "Sign up" : "Login"}
+        {promptText}{" "}
+        <Link href={linkHref} className="text-primary font-medium">
+          {linkLabel}
         </Link>
       </p>
     </section>
