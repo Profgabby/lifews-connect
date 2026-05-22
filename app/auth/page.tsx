@@ -165,15 +165,13 @@ export default function AuthPage() {
 
   /* ── Forgot password screen ── */
   if (showForgot) return (
-    <>
-    <style>{`@media (max-width: 768px) { .auth-page { grid-template-columns: 1fr !important; } .auth-left { display: none !important; } .auth-right { padding: 32px 20px !important; } }`}</style>
-    <div style={G.page} className="auth-page">
-      <div style={G.left} className="auth-left">
+    <div style={G.page}>
+      <div style={G.left}>
         <div style={{ ...G.deco, width: 360, height: 360, top: -120, right: -120 }} />
         <div style={G.bName}>LIFEWS<br />CONNECT™</div>
         <p style={G.bTag}>Connecting schools, teachers, parents, students, and communities.</p>
       </div>
-      <div style={G.right} className="auth-right">
+      <div style={G.right}>
         <div style={G.card}>
           <div style={G.logoRow}><div style={G.logoMark}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><span style={G.logoText}>LIFEWS Connect</span></div>
           <h1 style={G.h1}>Reset password</h1>
@@ -303,6 +301,5 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }
