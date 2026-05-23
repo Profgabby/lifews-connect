@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 type Stats = {
@@ -47,7 +48,6 @@ export default function AdminPage() {
   const [gigMsg, setGigMsg] = useState<string | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [broadcastSubject, setBroadcastSubject] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => { checkAdmin(); }, []);
 
@@ -75,9 +75,7 @@ export default function AdminPage() {
       totalTeachers: users.filter((u: User) => u.role === "teacher").length,
       totalArtisans: users.filter((u: User) => u.role === "artisan").length,
       pendingApprovals: pending.length,
-      activeGigs: 0,
-      monthlyRevenue: 0,
-      totalSubscribers: 0,
+      activeGigs: 0, monthlyRevenue: 0, totalSubscribers: 0,
     });
   }
 
@@ -103,6 +101,12 @@ export default function AdminPage() {
     if (error) { setGigMsg("Error: " + error.message); return; }
     setGigMsg("Gig posted successfully!");
     setGigTitle(""); setGigLocation(""); setGigType(""); setGigBudget(""); setGigSkills(""); setGigTimeline(""); setGigDesc("");
+  }
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
   }
 
   if (loading) return (
@@ -133,36 +137,34 @@ export default function AdminPage() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #0f1a0f; }
         .admin-wrap { display: flex; min-height: 100vh; font-family: 'DM Sans', sans-serif; background: #0f1a0f; }
-        
-        /* Sidebar */
-        .sidebar { width: 240px; background: #0f1a0f; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 50; transition: width 0.3s; }
-        .sidebar.collapsed { width: 64px; }
-        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
+        .sidebar { width: 240px; background: #0f1a0f; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 50; }
+        .sidebar-logo { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .sidebar-mark { width: 32px; height: 32px; background: #2D6A2D; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-        .sidebar-name { font-family: 'DM Serif Display', serif; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; }
-        .sidebar-tag { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-        .nav-items { padding: 16px 0; flex: 1; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; border-radius: 0; transition: all 0.2s; position: relative; border-left: 3px solid transparent; }
+        .sidebar-name { font-family: 'DM Serif Display', serif; font-size: 14px; color: #fff; }
+        .sidebar-tag { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+        .nav-items { padding: 16px 0; flex: 1; overflow-y: auto; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
         .nav-item:hover { background: rgba(255,255,255,0.05); }
         .nav-item.active { background: rgba(45,106,45,0.2); border-left-color: #2D6A2D; }
         .nav-icon { font-size: 18px; flex-shrink: 0; }
-        .nav-label { font-size: 13px; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; }
+        .nav-label { font-size: 13px; color: rgba(255,255,255,0.7); }
         .nav-item.active .nav-label { color: #fff; font-weight: 500; }
         .nav-badge { background: #2D6A2D; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: auto; }
-        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 8px; }
         .admin-pill { background: rgba(45,106,45,0.3); border: 1px solid rgba(45,106,45,0.5); border-radius: 20px; padding: 6px 12px; font-size: 11px; color: #7dc97d; text-align: center; }
-
-        /* Main */
-        .main { margin-left: 240px; flex: 1; min-height: 100vh; background: #111d11; transition: margin-left 0.3s; }
-        .main.collapsed { margin-left: 64px; }
+        .sidebar-link { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; transition: all 0.2s; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+        .sidebar-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .logout-btn { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: 12px; color: rgba(239,154,154,0.8); background: rgba(198,40,40,0.08); border: 1px solid rgba(198,40,40,0.15); cursor: pointer; width: 100%; font-family: 'DM Sans', sans-serif; }
+        .logout-btn:hover { background: rgba(198,40,40,0.15); }
+        .main { margin-left: 240px; flex: 1; min-height: 100vh; background: #111d11; }
         .topbar { background: #0f1a0f; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
         .page-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
         .topbar-time { font-size: 12px; color: rgba(255,255,255,0.4); }
+        .topbar-link { font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); }
+        .topbar-link:hover { color: #fff; }
         .admin-badge { background: #2D6A2D; color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 6px; font-weight: 500; }
         .content { padding: 32px; }
-
-        /* Stat cards */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
         .stat-card { background: #0f1a0f; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 20px; }
         .stat-icon { font-size: 24px; margin-bottom: 12px; display: block; }
@@ -171,8 +173,6 @@ export default function AdminPage() {
         .stat-card.green { border-color: rgba(45,106,45,0.4); background: rgba(45,106,45,0.1); }
         .stat-card.amber { border-color: rgba(255,160,0,0.3); background: rgba(255,160,0,0.05); }
         .stat-card.blue { border-color: rgba(24,95,165,0.3); background: rgba(24,95,165,0.05); }
-
-        /* Tables */
         .table-wrap { background: #0f1a0f; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; margin-bottom: 24px; }
         .table-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
         .table-title { font-size: 14px; font-weight: 500; color: #fff; }
@@ -182,8 +182,6 @@ export default function AdminPage() {
         td { padding: 14px 20px; font-size: 13px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.04); }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: rgba(255,255,255,0.02); }
-
-        /* Badges */
         .role-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
         .role-school { background: rgba(45,106,45,0.2); color: #7dc97d; }
         .role-teacher { background: rgba(24,95,165,0.2); color: #7ab3e8; }
@@ -193,14 +191,9 @@ export default function AdminPage() {
         .status-pending { background: rgba(255,160,0,0.15); color: #ffa500; padding: 3px 8px; border-radius: 6px; font-size: 11px; }
         .status-approved { background: rgba(45,106,45,0.2); color: #7dc97d; padding: 3px 8px; border-radius: 6px; font-size: 11px; }
         .status-rejected { background: rgba(198,40,40,0.2); color: #ef9a9a; padding: 3px 8px; border-radius: 6px; font-size: 11px; }
-
-        /* Buttons */
         .btn-green { background: #2D6A2D; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; }
-        .btn-green:hover { background: #1e4d1e; }
         .btn-red { background: rgba(198,40,40,0.2); color: #ef9a9a; border: 1px solid rgba(198,40,40,0.3); border-radius: 8px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
         .btn-ghost { background: transparent; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
-
-        /* Forms */
         .form-card { background: #0f1a0f; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
         .form-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: #fff; margin-bottom: 4px; }
         .form-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
@@ -208,127 +201,84 @@ export default function AdminPage() {
         .form-group { margin-bottom: 16px; }
         .form-lbl { display: block; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.65px; color: #7dc97d; margin-bottom: 6px; }
         .form-inp { width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: #fff; outline: none; }
-        .form-inp:focus { border-color: #2D6A2D; }
         .form-inp::placeholder { color: rgba(255,255,255,0.2); }
         .form-textarea { width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: #fff; outline: none; resize: vertical; min-height: 80px; }
         .ok-msg { background: rgba(45,106,45,0.2); border: 1px solid rgba(45,106,45,0.4); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #7dc97d; margin-top: 12px; }
         .err-msg { background: rgba(198,40,40,0.2); border: 1px solid rgba(198,40,40,0.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #ef9a9a; margin-top: 12px; }
-
-        /* Section titles */
         .section-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; margin-bottom: 6px; }
         .section-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
-
-        /* Empty state */
         .empty { text-align: center; padding: 48px; color: rgba(255,255,255,0.3); }
         .empty-icon { font-size: 40px; margin-bottom: 12px; }
         .empty-text { font-size: 14px; }
-
-        /* Quick actions */
         .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
         .quick-card { background: #0f1a0f; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: center; }
         .quick-card:hover { border-color: #2D6A2D; background: rgba(45,106,45,0.1); }
         .quick-icon { font-size: 28px; margin-bottom: 8px; display: block; }
         .quick-label { font-size: 12px; color: rgba(255,255,255,0.6); }
-
         @media (max-width: 768px) {
           .stats-grid { grid-template-columns: 1fr 1fr; }
           .form-grid { grid-template-columns: 1fr; }
           .quick-grid { grid-template-columns: 1fr 1fr; }
           .sidebar { width: 64px; }
-          .sidebar-name, .sidebar-tag, .nav-label, .nav-badge, .admin-pill { display: none; }
+          .sidebar-name, .sidebar-tag, .nav-label, .nav-badge, .admin-pill, .sidebar-link span { display: none; }
           .main { margin-left: 64px; }
+          .topbar-time, .topbar-link { display: none; }
         }
       `}</style>
 
       <div className="admin-wrap">
-        {/* Sidebar */}
         <aside className="sidebar">
-          <div className="sidebar-logo">
+          <Link href="/" className="sidebar-logo">
             <div className="sidebar-mark">🌱</div>
             <div>
               <div className="sidebar-name">LIFEWS Admin</div>
               <div className="sidebar-tag">Control Panel</div>
             </div>
-          </div>
+          </Link>
           <nav className="nav-items">
             {NAV_ITEMS.map(item => (
               <div key={item.id} className={`nav-item ${activeTab === item.id ? "active" : ""}`} onClick={() => setActiveTab(item.id)}>
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-label">{item.label}</span>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="nav-badge">{item.badge}</span>
-                )}
+                {item.badge !== undefined && item.badge > 0 && <span className="nav-badge">{item.badge}</span>}
               </div>
             ))}
           </nav>
           <div className="sidebar-footer">
             <div className="admin-pill">🔐 Admin Access</div>
+            <Link href="/" className="sidebar-link">🏠 <span>Live Site</span></Link>
+            <Link href="/pricing" className="sidebar-link">💎 <span>Pricing Page</span></Link>
+            <Link href="/dashboard" className="sidebar-link">📋 <span>User Dashboard</span></Link>
+            <button className="logout-btn" onClick={handleLogout}>🚪 <span>Sign out</span></button>
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="main">
           <div className="topbar">
-            <div className="page-title">
-              {NAV_ITEMS.find(n => n.id === activeTab)?.icon} {NAV_ITEMS.find(n => n.id === activeTab)?.label}
-            </div>
+            <div className="page-title">{NAV_ITEMS.find(n => n.id === activeTab)?.icon} {NAV_ITEMS.find(n => n.id === activeTab)?.label}</div>
             <div className="topbar-right">
               <span className="topbar-time">{new Date().toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+              <Link href="/" className="topbar-link">🏠 Live Site</Link>
+              <Link href="/pricing" className="topbar-link">💎 Pricing</Link>
               <span className="admin-badge">LIFEWS Admin</span>
             </div>
           </div>
 
           <div className="content">
-
-            {/* ── DASHBOARD ── */}
             {activeTab === "dashboard" && (
               <div>
                 <div className="section-title">Welcome back, Prof Gabby 👋</div>
-                <div className="section-sub">Here's what's happening on LIFEWS today.</div>
-
+                <div className="section-sub">Here&apos;s what&apos;s happening on LIFEWS today.</div>
                 <div className="stats-grid">
-                  <div className="stat-card green">
-                    <span className="stat-icon">👥</span>
-                    <div className="stat-num">{stats.totalUsers}</div>
-                    <div className="stat-label">Total Users</div>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-icon">🏫</span>
-                    <div className="stat-num">{stats.totalSchools}</div>
-                    <div className="stat-label">Schools</div>
-                  </div>
-                  <div className="stat-card blue">
-                    <span className="stat-icon">📚</span>
-                    <div className="stat-num">{stats.totalTeachers}</div>
-                    <div className="stat-label">Teachers</div>
-                  </div>
-                  <div className="stat-card amber">
-                    <span className="stat-icon">🔨</span>
-                    <div className="stat-num">{stats.totalArtisans}</div>
-                    <div className="stat-label">Artisans</div>
-                  </div>
-                  <div className="stat-card amber">
-                    <span className="stat-icon">⏳</span>
-                    <div className="stat-num">{stats.pendingApprovals}</div>
-                    <div className="stat-label">Pending Approvals</div>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-icon">🔨</span>
-                    <div className="stat-num">{stats.activeGigs}</div>
-                    <div className="stat-label">Active Gigs</div>
-                  </div>
-                  <div className="stat-card green">
-                    <span className="stat-icon">💰</span>
-                    <div className="stat-num">₦{stats.monthlyRevenue.toLocaleString()}</div>
-                    <div className="stat-label">Monthly Revenue</div>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-icon">⭐</span>
-                    <div className="stat-num">{stats.totalSubscribers}</div>
-                    <div className="stat-label">Paid Subscribers</div>
-                  </div>
+                  <div className="stat-card green"><span className="stat-icon">👥</span><div className="stat-num">{stats.totalUsers}</div><div className="stat-label">Total Users</div></div>
+                  <div className="stat-card"><span className="stat-icon">🏫</span><div className="stat-num">{stats.totalSchools}</div><div className="stat-label">Schools</div></div>
+                  <div className="stat-card blue"><span className="stat-icon">📚</span><div className="stat-num">{stats.totalTeachers}</div><div className="stat-label">Teachers</div></div>
+                  <div className="stat-card amber"><span className="stat-icon">🔨</span><div className="stat-num">{stats.totalArtisans}</div><div className="stat-label">Artisans</div></div>
+                  <div className="stat-card amber"><span className="stat-icon">⏳</span><div className="stat-num">{stats.pendingApprovals}</div><div className="stat-label">Pending Approvals</div></div>
+                  <div className="stat-card"><span className="stat-icon">🔨</span><div className="stat-num">{stats.activeGigs}</div><div className="stat-label">Active Gigs</div></div>
+                  <div className="stat-card green"><span className="stat-icon">💰</span><div className="stat-num">₦{stats.monthlyRevenue.toLocaleString()}</div><div className="stat-label">Monthly Revenue</div></div>
+                  <div className="stat-card"><span className="stat-icon">⭐</span><div className="stat-num">{stats.totalSubscribers}</div><div className="stat-label">Paid Subscribers</div></div>
                 </div>
-
                 <div style={{ marginBottom: 16, fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.7px" }}>Quick Actions</div>
                 <div className="quick-grid">
                   {[
@@ -345,26 +295,13 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
-
-                {/* Recent users */}
                 <div className="table-wrap">
                   <div className="table-header">
-                    <div>
-                      <div className="table-title">Recent Signups</div>
-                      <div className="table-sub">Latest users to join LIFEWS</div>
-                    </div>
+                    <div><div className="table-title">Recent Signups</div><div className="table-sub">Latest users to join LIFEWS</div></div>
                     <button className="btn-ghost" onClick={() => setActiveTab("users")}>View all</button>
                   </div>
                   <table>
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Joined</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Status</th></tr></thead>
                     <tbody>
                       {users.slice(0, 5).map(u => (
                         <tr key={u.id}>
@@ -375,31 +312,20 @@ export default function AdminPage() {
                           <td><span className={`status-${u.status || "approved"}`}>{u.status || "active"}</span></td>
                         </tr>
                       ))}
-                      {users.length === 0 && (
-                        <tr><td colSpan={5}><div className="empty"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div></td></tr>
-                      )}
+                      {users.length === 0 && <tr><td colSpan={5}><div className="empty"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div></td></tr>}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* ── USERS ── */}
             {activeTab === "users" && (
               <div>
                 <div className="section-title">All Users</div>
                 <div className="section-sub">{users.length} total users on LIFEWS Connect</div>
                 <div className="table-wrap">
                   <table>
-                    <thead>
-                      <tr>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Joined</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
+                    <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Status</th></tr></thead>
                     <tbody>
                       {users.map(u => (
                         <tr key={u.id}>
@@ -410,31 +336,20 @@ export default function AdminPage() {
                           <td><span className={`status-${u.status || "approved"}`}>{u.status || "active"}</span></td>
                         </tr>
                       ))}
-                      {users.length === 0 && (
-                        <tr><td colSpan={5}><div className="empty"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div></td></tr>
-                      )}
+                      {users.length === 0 && <tr><td colSpan={5}><div className="empty"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div></td></tr>}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* ── APPROVALS ── */}
             {activeTab === "approvals" && (
               <div>
                 <div className="section-title">Pending Approvals</div>
                 <div className="section-sub">Teachers and artisans awaiting review — 72hr SLA</div>
                 <div className="table-wrap">
                   <table>
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Applied</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Applied</th><th>Actions</th></tr></thead>
                     <tbody>
                       {pendingUsers.map(u => (
                         <tr key={u.id}>
@@ -450,21 +365,13 @@ export default function AdminPage() {
                           </td>
                         </tr>
                       ))}
-                      {pendingUsers.length === 0 && (
-                        <tr><td colSpan={5}>
-                          <div className="empty">
-                            <div className="empty-icon">✅</div>
-                            <div className="empty-text">No pending approvals — you're all caught up!</div>
-                          </div>
-                        </td></tr>
-                      )}
+                      {pendingUsers.length === 0 && <tr><td colSpan={5}><div className="empty"><div className="empty-icon">✅</div><div className="empty-text">No pending approvals — you&apos;re all caught up!</div></div></td></tr>}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* ── GIGS ── */}
             {activeTab === "gigs" && (
               <div>
                 <div className="section-title">Garden Gigs</div>
@@ -473,58 +380,24 @@ export default function AdminPage() {
                   <div className="form-title">Post a New Garden Gig</div>
                   <div className="form-sub">This gig will be visible to all approved artisans on their dashboard</div>
                   <div className="form-grid">
-                    <div className="form-group">
-                      <label className="form-lbl">Gig Title</label>
-                      <input className="form-inp" placeholder="e.g. Raised Bed Garden Installation" value={gigTitle} onChange={e => setGigTitle(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-lbl">Location</label>
-                      <input className="form-inp" placeholder="e.g. Lekki, Lagos" value={gigLocation} onChange={e => setGigLocation(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-lbl">Garden Type</label>
-                      <input className="form-inp" placeholder="e.g. Agrivoltaic, Raised Bed, FEW System" value={gigType} onChange={e => setGigType(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-lbl">Budget (₦)</label>
-                      <input className="form-inp" placeholder="e.g. ₦150,000" value={gigBudget} onChange={e => setGigBudget(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-lbl">Skills Needed</label>
-                      <input className="form-inp" placeholder="e.g. Carpentry, Plumbing, Electrical" value={gigSkills} onChange={e => setGigSkills(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-lbl">Timeline</label>
-                      <input className="form-inp" placeholder="e.g. 3 days, 1 week" value={gigTimeline} onChange={e => setGigTimeline(e.target.value)} />
-                    </div>
+                    <div className="form-group"><label className="form-lbl">Gig Title</label><input className="form-inp" placeholder="e.g. Raised Bed Garden Installation" value={gigTitle} onChange={e => setGigTitle(e.target.value)} /></div>
+                    <div className="form-group"><label className="form-lbl">Location</label><input className="form-inp" placeholder="e.g. Lekki, Lagos" value={gigLocation} onChange={e => setGigLocation(e.target.value)} /></div>
+                    <div className="form-group"><label className="form-lbl">Garden Type</label><input className="form-inp" placeholder="e.g. Agrivoltaic, Raised Bed, FEW System" value={gigType} onChange={e => setGigType(e.target.value)} /></div>
+                    <div className="form-group"><label className="form-lbl">Budget (₦)</label><input className="form-inp" placeholder="e.g. ₦150,000" value={gigBudget} onChange={e => setGigBudget(e.target.value)} /></div>
+                    <div className="form-group"><label className="form-lbl">Skills Needed</label><input className="form-inp" placeholder="e.g. Carpentry, Plumbing, Electrical" value={gigSkills} onChange={e => setGigSkills(e.target.value)} /></div>
+                    <div className="form-group"><label className="form-lbl">Timeline</label><input className="form-inp" placeholder="e.g. 3 days, 1 week" value={gigTimeline} onChange={e => setGigTimeline(e.target.value)} /></div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-lbl">Description</label>
-                    <textarea className="form-textarea" placeholder="Describe the job in detail — what needs to be done, any special requirements..." value={gigDesc} onChange={e => setGigDesc(e.target.value)} />
-                  </div>
-                  <button className="btn-green" onClick={postGig} style={{ padding: "11px 24px", fontSize: 13 }}>
-                    🔨 Post Gig to Artisans
-                  </button>
+                  <div className="form-group"><label className="form-lbl">Description</label><textarea className="form-textarea" placeholder="Describe the job in detail..." value={gigDesc} onChange={e => setGigDesc(e.target.value)} /></div>
+                  <button className="btn-green" onClick={postGig} style={{ padding: "11px 24px", fontSize: 13 }}>🔨 Post Gig to Artisans</button>
                   {gigMsg && <div className={gigMsg.startsWith("Error") ? "err-msg" : "ok-msg"}>{gigMsg}</div>}
                 </div>
-
-                {/* Active gigs placeholder */}
                 <div className="table-wrap">
-                  <div className="table-header">
-                    <div>
-                      <div className="table-title">Active Gigs</div>
-                      <div className="table-sub">Currently open garden installation jobs</div>
-                    </div>
-                  </div>
-                  <div className="empty">
-                    <div className="empty-icon">🔨</div>
-                    <div className="empty-text">No active gigs yet — post your first one above!</div>
-                  </div>
+                  <div className="table-header"><div><div className="table-title">Active Gigs</div><div className="table-sub">Currently open garden installation jobs</div></div></div>
+                  <div className="empty"><div className="empty-icon">🔨</div><div className="empty-text">No active gigs yet — post your first one above!</div></div>
                 </div>
               </div>
             )}
 
-            {/* ── PAYMENTS ── */}
             {activeTab === "payments" && (
               <div>
                 <div className="section-title">Payments & Payouts</div>
@@ -543,18 +416,12 @@ export default function AdminPage() {
                   ))}
                 </div>
                 <div className="table-wrap">
-                  <div className="table-header">
-                    <div className="table-title">Payout Queue</div>
-                  </div>
-                  <div className="empty">
-                    <div className="empty-icon">💰</div>
-                    <div className="empty-text">No pending payouts — connect Paystack to enable payments</div>
-                  </div>
+                  <div className="table-header"><div className="table-title">Payout Queue</div></div>
+                  <div className="empty"><div className="empty-icon">💰</div><div className="empty-text">No pending payouts — connect Paystack to enable payments</div></div>
                 </div>
               </div>
             )}
 
-            {/* ── CONTENT ── */}
             {activeTab === "content" && (
               <div>
                 <div className="section-title">Content Management</div>
@@ -578,22 +445,15 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* ── COMMUNICATIONS ── */}
             {activeTab === "communications" && (
               <div>
                 <div className="section-title">Communications</div>
                 <div className="section-sub">Send announcements, emails and WhatsApp blasts to your users</div>
                 <div className="form-card">
                   <div className="form-title">Send Announcement</div>
-                  <div className="form-sub">This will be posted to all users' dashboards</div>
-                  <div className="form-group">
-                    <label className="form-lbl">Subject</label>
-                    <input className="form-inp" placeholder="e.g. New feature launched!" value={broadcastSubject} onChange={e => setBroadcastSubject(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-lbl">Message</label>
-                    <textarea className="form-textarea" style={{ minHeight: 120 }} placeholder="Write your announcement here..." value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)} />
-                  </div>
+                  <div className="form-sub">This will be posted to all users&apos; dashboards</div>
+                  <div className="form-group"><label className="form-lbl">Subject</label><input className="form-inp" placeholder="e.g. New feature launched!" value={broadcastSubject} onChange={e => setBroadcastSubject(e.target.value)} /></div>
+                  <div className="form-group"><label className="form-lbl">Message</label><textarea className="form-textarea" style={{ minHeight: 120 }} placeholder="Write your announcement here..." value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)} /></div>
                   <div style={{ display: "flex", gap: 10 }}>
                     <button className="btn-green" style={{ padding: "11px 24px", fontSize: 13 }}>📣 Send to All Users</button>
                     <button className="btn-ghost" style={{ padding: "11px 24px", fontSize: 13 }}>🏫 Schools Only</button>
@@ -602,7 +462,6 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
-
           </div>
         </main>
       </div>
