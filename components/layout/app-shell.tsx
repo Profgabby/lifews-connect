@@ -10,6 +10,7 @@ const NAV_MAIN = [
   { icon: "ti-plant-2",          label: "Garden Tracker",   href: "/garden" },
   { icon: "ti-home",             label: "Home Garden",      href: "/home-garden" },
   { icon: "ti-users",            label: "My Students",      href: "/students" },
+  { icon: "ti-hammer",           label: "Gigs",             href: "/gigs" },
 ];
 
 const NAV_TEACHER = [
