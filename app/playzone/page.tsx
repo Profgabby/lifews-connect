@@ -324,7 +324,7 @@ export default function PlayZonePage() {
             <p className="sec-sub">From nursery to university, teachers to parents — everyone has their own PlayZone with age-appropriate challenges.</p>
             <div className="age-groups">
               {AGE_GROUPS.map(g => (
-                <Link key={g.id} href={`/playzone/${g.id}`} className="age-card" style={{ background: g.bg, borderColor: g.border }}>
+                <Link key={g.id} href={'/playzone/' + g.id as any} className="age-card" style={{ background: g.bg, borderColor: g.border }}>
                   <span className="age-emoji">{g.emoji}</span>
                   <div className="age-name" style={{ color: g.color }}>{g.name}</div>
                   <div className="age-level" style={{ color: g.color }}>{g.age} · {g.level}</div>
