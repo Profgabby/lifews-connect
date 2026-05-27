@@ -119,6 +119,7 @@ export default function LandingPage() {
           <div className="nav-links">
             <a href="#pillars" className="nav-link">Pillars</a>
             <a href="#who" className="nav-link">Who it&apos;s for</a>
+            <a href="/playzone" className="nav-link">PlayZone 🎮</a>
             <a href="/platforms" className="nav-link">Platforms</a>
             <a href="/pricing" className="nav-link">Pricing</a>
             <a href="/auth" className="nav-link">Sign in</a>
