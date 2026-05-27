@@ -5,25 +5,26 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const ROLES = [
-  { value: "school",            label: "School admin" },
+  { value: "school",            label: "School" },
   { value: "teacher",           label: "Teacher" },
   { value: "parent",            label: "Parent" },
   { value: "student",           label: "Student" },
+  { value: "family",            label: "Family / Home User" },
   { value: "youth",             label: "Youth" },
-  { value: "artisan",           label: "Artisan" },
-  { value: "ngo_organization",  label: "NGO / Partner" },
+  { value: "community_partner", label: "Community Partner" },
+  { value: "ngo_organization",  label: "NGO / Organization" },
   { value: "researcher",        label: "Researcher" },
-  { value: "community_partner", label: "Community partner" },
-  { value: "admin",             label: "Admin" },
+  { value: "volunteer",         label: "Volunteer" },
+  { value: "general",           label: "General User" },
 ] as const;
 
 type RoleValue = (typeof ROLES)[number]["value"];
 
 const PILLARS = [
   { name: "AgriShine™",  desc: "School gardens & FEW systems learning" },
-  { name: "AgriAble™",   desc: "Inclusion & adaptive learning paths" },
-  { name: "AgriNext™",   desc: "STEM innovation & digital agriculture" },
-  { name: "AgriRoots™",  desc: "Culture, language & food heritage" },
+  { name: "AgriAble™",   desc: "Families, home gardens & adaptive learning" },
+  { name: "AgriNext™",   desc: "Youth innovation & digital agriculture" },
+  { name: "AgriRoots™",  desc: "Community food security & local heritage" },
 ];
 
 export default function AuthPage() {
@@ -39,7 +40,7 @@ export default function AuthPage() {
   const [phone, setPhone]           = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [orgName, setOrgName]       = useState("");
-  const [role, setRole]             = useState<RoleValue>("teacher");
+  const [role, setRole]             = useState<RoleValue>("general");
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [showForgot, setShowForgot] = useState(false);
@@ -99,15 +100,15 @@ export default function AuthPage() {
   }
 
   const S = {
-    inp: { width: "100%", padding: "11px 14px", border: "1.5px solid #d4cbb8", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 14, background: "#fff", color: "#333", outline: "none", marginBottom: 16, boxSizing: "border-box" as const },
-    lbl: { display: "block", fontSize: 11, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: 0.65, color: "#2D6A2D", marginBottom: 6 },
-    btn: { width: "100%", padding: 13, background: "#2D6A2D", color: "#fff", border: "none", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500, cursor: "pointer", marginTop: 4 },
-    btnG: { width: "100%", padding: 13, background: "transparent", color: "#2D6A2D", border: "1.5px solid #2D6A2D", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500, cursor: "pointer", marginTop: 8 },
-    err: { borderRadius: 8, padding: "10px 14px", fontSize: 13, marginTop: 14, background: "#fff0f0", border: "1px solid #ffcdd2", color: "#c62828" },
-    ok:  { borderRadius: 8, padding: "10px 14px", fontSize: 13, marginTop: 14, background: "#f0f7ec", border: "1px solid #b8dba8", color: "#1e4d1e" },
-    link: { fontSize: 12, color: "#2D6A2D", background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", padding: 0 },
-    chipOff: { padding: "10px 12px", border: "1.5px solid #d4cbb8", borderRadius: 10, background: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#555", cursor: "pointer", textAlign: "center" as const },
-    chipOn:  { padding: "10px 12px", border: "1.5px solid #2D6A2D", borderRadius: 10, background: "#f0f7ec", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1e4d1e", cursor: "pointer", textAlign: "center" as const, fontWeight: 500 },
+    inp:    { width: "100%", padding: "11px 14px", border: "1.5px solid #d4cbb8", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 14, background: "#fff", color: "#333", outline: "none", marginBottom: 16, boxSizing: "border-box" as const },
+    lbl:    { display: "block", fontSize: 11, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: 0.65, color: "#2D6A2D", marginBottom: 6 },
+    btn:    { width: "100%", padding: 13, background: "#2D6A2D", color: "#fff", border: "none", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500, cursor: "pointer", marginTop: 4 },
+    btnG:   { width: "100%", padding: 13, background: "transparent", color: "#2D6A2D", border: "1.5px solid #2D6A2D", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500, cursor: "pointer", marginTop: 8 },
+    err:    { borderRadius: 8, padding: "10px 14px", fontSize: 13, marginTop: 14, background: "#fff0f0", border: "1px solid #ffcdd2", color: "#c62828" },
+    ok:     { borderRadius: 8, padding: "10px 14px", fontSize: 13, marginTop: 14, background: "#f0f7ec", border: "1px solid #b8dba8", color: "#1e4d1e" },
+    link:   { fontSize: 12, color: "#2D6A2D", background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", padding: 0 },
+    chipOff:{ padding: "10px 12px", border: "1.5px solid #d4cbb8", borderRadius: 10, background: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#555", cursor: "pointer", textAlign: "center" as const },
+    chipOn: { padding: "10px 12px", border: "1.5px solid #2D6A2D", borderRadius: 10, background: "#f0f7ec", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1e4d1e", cursor: "pointer", textAlign: "center" as const, fontWeight: 500 },
   };
 
   const formContent = (
@@ -134,7 +135,7 @@ export default function AuthPage() {
       {tab === "login" && !showForgot && (
         <form onSubmit={handleLogin}>
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#163816", marginBottom: 6, marginTop: 0 }}>Welcome back</h1>
-          <p style={{ fontSize: 14, color: "#777", marginBottom: 24, marginTop: 0 }}>Sign in to your LIFEWS account to continue</p>
+          <p style={{ fontSize: 14, color: "#777", marginBottom: 24, marginTop: 0 }}>Sign in to your LIFEWSConnect account</p>
           <label style={S.lbl}>Email address</label>
           <input style={S.inp} type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
           <label style={S.lbl}>Password</label>
@@ -142,7 +143,7 @@ export default function AuthPage() {
           <div style={{ textAlign: "right", marginTop: -10, marginBottom: 16 }}>
             <button type="button" style={S.link} onClick={() => { setShowForgot(true); setError(null); }}>Forgot password?</button>
           </div>
-          <button style={S.btn} type="submit" disabled={loading}>{loading ? "Signing in…" : "Sign in to LIFEWS Connect"}</button>
+          <button style={S.btn} type="submit" disabled={loading}>{loading ? "Signing in…" : "Sign in to LIFEWSConnect"}</button>
           {error && <div style={S.err}>{error}</div>}
         </form>
       )}
@@ -166,14 +167,15 @@ export default function AuthPage() {
       {/* SIGNUP */}
       {tab === "signup" && (
         <div>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#163816", marginBottom: 6, marginTop: 0 }}>Join LIFEWS</h1>
-          <p style={{ fontSize: 14, color: "#777", marginBottom: 20, marginTop: 0 }}>Create your account — it only takes a minute</p>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#163816", marginBottom: 6, marginTop: 0 }}>Register for LIFEWSConnect</h1>
+          <p style={{ fontSize: 14, color: "#777", marginBottom: 20, marginTop: 0 }}>Create your account to access LIFEWS programs, gardens, training, and connected platforms.</p>
           <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
             {[1,2,3].map(n => (
               <div key={n} style={{ height: 4, flex: 1, borderRadius: 2, background: step >= n ? "#2D6A2D" : "#ddd5c0" }} />
             ))}
           </div>
 
+          {/* Step 1 — Email & password */}
           {step === 1 && (
             <form onSubmit={handleSignup}>
               <label style={S.lbl}>Email address</label>
@@ -185,18 +187,22 @@ export default function AuthPage() {
             </form>
           )}
 
+          {/* Step 2 — Role selection */}
           {step === 2 && (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: 0.65, color: "#999", marginBottom: 12 }}>Choose your role</div>
+              <div style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: 0.65, color: "#999", marginBottom: 6 }}>I am joining as a</div>
+              <p style={{ fontSize: 12, color: "#888", marginBottom: 14 }}>Choose the option that best describes you</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
                 {ROLES.map(r => (
                   <div key={r.value} style={role === r.value ? S.chipOn : S.chipOff} onClick={() => setRole(r.value)}>{r.label}</div>
                 ))}
               </div>
               <button type="button" style={S.btn} onClick={() => setStep(3)}>Continue →</button>
+              <button type="button" style={S.btnG} onClick={() => setStep(1)}>← Back</button>
             </div>
           )}
 
+          {/* Step 3 — Profile details */}
           {step === 3 && (
             <form onSubmit={handleProfile}>
               <label style={S.lbl}>Full name</label>
@@ -205,15 +211,24 @@ export default function AuthPage() {
               <input style={S.inp} type="text" placeholder="Your country" value={country} onChange={e => setCountry(e.target.value)} required />
               <label style={S.lbl}>Phone (optional)</label>
               <input style={S.inp} type="tel" placeholder="+234 …" value={phone} onChange={e => setPhone(e.target.value)} />
-              {(role === "teacher" || role === "school") && (<>
-                <label style={S.lbl}>School name</label>
-                <input style={S.inp} type="text" placeholder="Your school" value={schoolName} onChange={e => setSchoolName(e.target.value)} />
-              </>)}
-              {(role === "ngo_organization" || role === "community_partner" || role === "artisan") && (<>
-                <label style={S.lbl}>Organisation name</label>
-                <input style={S.inp} type="text" placeholder="Your organisation" value={orgName} onChange={e => setOrgName(e.target.value)} />
-              </>)}
-              <button style={S.btn} type="submit" disabled={loading}>{loading ? "Saving…" : "Complete registration"}</button>
+
+              {/* School name — only for school or teacher */}
+              {(role === "teacher" || role === "school") && (
+                <>
+                  <label style={S.lbl}>School name</label>
+                  <input style={S.inp} type="text" placeholder="Name of your school" value={schoolName} onChange={e => setSchoolName(e.target.value)} />
+                </>
+              )}
+
+              {/* Organisation name — for NGOs, community partners, researchers */}
+              {(role === "ngo_organization" || role === "community_partner" || role === "researcher" || role === "volunteer") && (
+                <>
+                  <label style={S.lbl}>Organisation name</label>
+                  <input style={S.inp} type="text" placeholder="Your organisation" value={orgName} onChange={e => setOrgName(e.target.value)} />
+                </>
+              )}
+
+              <button style={S.btn} type="submit" disabled={loading}>{loading ? "Saving…" : "Create Account"}</button>
               <button type="button" style={S.btnG} onClick={() => setStep(2)}>← Back</button>
               {error && <div style={S.err}>{error}</div>}
             </form>
@@ -245,7 +260,7 @@ export default function AuthPage() {
           <div>
             <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 38, lineHeight: 1.1, color: "#fff", marginBottom: 14 }}>LIFEWS<br />CONNECT™</div>
             <p style={{ fontSize: 14, fontWeight: 300, color: "rgba(255,255,255,0.72)", lineHeight: 1.65, marginBottom: 36 }}>
-              Connecting schools, teachers, parents, students,<br />and communities for inclusive food-energy-water education.
+              Connecting schools, families, communities, learners, and partners to food, energy, water, learning, and sustainability solutions.
             </p>
             <div className="pillars-grid">
               {PILLARS.map(p => (
@@ -265,3 +280,4 @@ export default function AuthPage() {
     </>
   );
 }
+
