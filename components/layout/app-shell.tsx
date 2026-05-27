@@ -1,12 +1,12 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_MAIN = [
-  { icon: "ti-layout-dashboard", label: "Dashboard",        href: "/dashboard" },
-  { icon: "ti-book-2",           label: "Lesson Library",   href: "/library" },
+  { icon: "ti-home",             label: "Home",             href: "/" },
+  { icon: "ti-layout-dashboard", label: "My Dashboard",     href: "/dashboard" },
+  { icon: "ti-book-2",           label: "Programs",         href: "/library" },
   { icon: "ti-plant-2",          label: "Garden Tracker",   href: "/garden" },
   { icon: "ti-home",             label: "Home Garden",      href: "/home-garden" },
   { icon: "ti-users",            label: "My Students",      href: "/students" },
@@ -19,6 +19,13 @@ const NAV_TEACHER = [
   { icon: "ti-calendar-event", label: "Events",             href: "/events" },
   { icon: "ti-speakerphone",   label: "Announcements",      href: "/announcements" },
   { icon: "ti-message",        label: "Messages",           href: "/messages" },
+];
+
+const NAV_PLATFORMS = [
+  { icon: "ti-books",      label: "LIFEWSBooks",    href: "https://lifewsbooks.com",    external: true },
+  { icon: "ti-school",     label: "LIFEWSAcademy",  href: "https://lifewsacademy.org",  external: true },
+  { icon: "ti-plant",      label: "GrowHubSystems",  href: "https://growhubsystems.com", external: true },
+  { icon: "ti-briefcase",  label: "LIFEWSWorks",    href: "https://lifewsworks.com",    external: true },
 ];
 
 const NAV_ACCOUNT = [
@@ -36,12 +43,14 @@ const PILLAR_FOR_ROLE: Record<string, string> = {
   teacher:           "AgriShine™",
   school:            "AgriShine™",
   parent:            "AgriAble™",
+  family:            "AgriAble™",
   student:           "AgriShine™",
   youth:             "AgriNext™",
-  artisan:           "AgriRoots™",
   community_partner: "AgriRoots™",
   ngo_organization:  "AgriRoots™",
   researcher:        "AgriNext™",
+  volunteer:         "AgriRoots™",
+  general:           "LIFEWS Connect",
   admin:             "All pillars",
 };
 
@@ -73,11 +82,13 @@ export function AppShell({ children, title, role, userName }: AppShellProps) {
     router.refresh();
   }
 
-  function NavItem({ icon, label, href }: { icon: string; label: string; href: string }) {
+  function NavItem({ icon, label, href, external }: { icon: string; label: string; href: string; external?: boolean }) {
     const active = typeof window !== "undefined" && window.location.pathname === href;
     return (
       <a
         href={href}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noopener noreferrer" : undefined}
         style={{
           display: "flex",
           alignItems: "center",
@@ -101,7 +112,8 @@ export function AppShell({ children, title, role, userName }: AppShellProps) {
         }}
       >
         <i className={`ti ${icon}`} style={{ fontSize: 16, opacity: active ? 1 : 0.8 }} aria-hidden="true" />
-        {label}
+        <span style={{ flex: 1 }}>{label}</span>
+        {external && <i className="ti ti-external-link" style={{ fontSize: 11, opacity: 0.4 }} aria-hidden="true" />}
       </a>
     );
   }
@@ -136,13 +148,13 @@ export function AppShell({ children, title, role, userName }: AppShellProps) {
       }}>
         {/* Logo */}
         <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-          <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
+          <a href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
             <div style={{ width: 32, height: 32, background: "rgba(255,255,255,0.15)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <i className="ti ti-leaf" style={{ fontSize: 17, color: "#fff" }} aria-hidden="true" />
             </div>
             <div>
               <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 15, color: "#fff", letterSpacing: -0.2 }}>LIFEWS Connect</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 1 }}>MVP v0.1</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 1 }}>Ecosystem Platform</div>
             </div>
           </a>
         </div>
@@ -183,6 +195,9 @@ export function AppShell({ children, title, role, userName }: AppShellProps) {
 
           <NavSection label="Teaching & School" />
           {NAV_TEACHER.map((item) => <NavItem key={item.href} {...item} />)}
+
+          <NavSection label="LIFEWS Platforms" />
+          {NAV_PLATFORMS.map((item) => <NavItem key={item.href} {...item} />)}
 
           <NavSection label="Account" />
           {NAV_ACCOUNT.map((item) => <NavItem key={item.href} {...item} />)}
@@ -266,19 +281,20 @@ export function AppShell({ children, title, role, userName }: AppShellProps) {
             >
               <i className="ti ti-menu-2" aria-hidden="true" />
             </button>
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: "#163816" }}>{title ?? "Dashboard"}</span>
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: "#163816" }}>{title ?? "My LIFEWS Dashboard"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F5E8", border: "1px solid #e0d8c8", borderRadius: 8, padding: "6px 12px", fontSize: 13, color: "#aaa", width: 200 }}>
-              <i className="ti ti-search" style={{ fontSize: 14 }} aria-hidden="true" />
-              Search…
-            </div>
+            {/* Home button */}
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#f0f7ec", border: "1px solid #b8dba8", borderRadius: 8, fontSize: 12, color: "#2D6A2D", textDecoration: "none", fontWeight: 500 }}>
+              🏠 Home
+            </a>
+            {/* Platforms button */}
+            <a href="/platforms" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#fff", border: "1px solid #e0d8c8", borderRadius: 8, fontSize: 12, color: "#555", textDecoration: "none" }}>
+              🌐 Platforms
+            </a>
             <div style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid #e0d8c8", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666", fontSize: 16, position: "relative" as const }}>
               <i className="ti ti-bell" aria-hidden="true" />
               <div style={{ width: 7, height: 7, background: "#e05c2a", borderRadius: "50%", position: "absolute" as const, top: 6, right: 6 }} />
-            </div>
-            <div style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid #e0d8c8", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666", fontSize: 16 }}>
-              <i className="ti ti-message" aria-hidden="true" />
             </div>
             <a
               href="/settings"
@@ -297,3 +313,4 @@ export function AppShell({ children, title, role, userName }: AppShellProps) {
     </div>
   );
 }
+
