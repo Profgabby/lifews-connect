@@ -24,7 +24,7 @@ const PLATFORMS = [
     desc: "Register for online courses, training programs, certifications, and green skills learning. LIFEWSAcademy connects learners to structured education pathways in agriculture, sustainability, and community development.",
     features: ["Online courses & certifications", "Green skills training", "Climate-smart agriculture modules", "Youth innovation programs", "Professional development tracks"],
     btn: "Visit LIFEWSAcademy",
-    href: "https://lifewsacademy.com",
+    href: "https://lifewsacademy.org",
     for: ["Youth", "Teachers", "Community partners", "Researchers"],
   },
   {
