@@ -1431,7 +1431,7 @@ export default function SproutsPlayzone() {
                   📚 Change Grade
                 </button>
                 <button onClick={() => { setPlayerName(''); setNameInput(''); setGrade(null); setCat(null); setScreen('name') }}
-                  style={{padding:14,border:'none',borderRadius:14,background:'#1a1a2a',color:'#8db4cc',fontFamily:"'Fredoka One',cursive",fontSize:'1rem',cursor:'pointer',border:'1px solid #2a3a4a'}}>
+                  style={{padding:14,border:'none',borderRadius:14,background:'#1a1a2a',color:'#8db4cc',fontFamily:"'Fredoka One',cursive",fontSize:'1rem',cursor:'pointer',outline:'1px solid #2a3a4a'}}>
                   👤 New Player
                 </button>
               </div>
