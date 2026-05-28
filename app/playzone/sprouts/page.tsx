@@ -1,5 +1,4 @@
 'use client'
-'use client'
 import { useState, useCallback } from 'react'
 
 // ─── TYPES ────────────────────────────────────────────────────
@@ -506,7 +505,9 @@ function DragGame({ q, onResult }: { q: Question, onResult:(correct:boolean)=>vo
 
 // ─── MAIN PAGE ────────────────────────────────────────────────
 export default function SproutsPlayzone() {
-  const [screen, setScreen] = useState<'home'|'game'|'result'>('home')
+  const [screen, setScreen] = useState<'name'|'home'|'game'|'result'>('name')
+  const [playerName, setPlayerName] = useState('')
+  const [nameInput, setNameInput] = useState('')
   const [diff, setDiff] = useState<Diff>('easy')
   const [cat, setCat] = useState<Cat|null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
@@ -526,11 +527,18 @@ export default function SproutsPlayzone() {
   const total = questions.length
   const pct = total > 0 ? (idx/total)*100 : 0
 
+
+  function handleNameSubmit() {
+    if (!nameInput.trim()) return
+    setPlayerName(nameInput.trim())
+    setScreen('home')
+  }
+
   function startGame() {
     if (!cat) return
     const pool = QB[cat][diff]
     if (!pool?.length) { alert('Questions coming soon!'); return }
-    setQuestions(shuffle(pool).slice(0, Math.min(pool.length, 6)))
+    setQuestions(shuffle(pool).slice(0, Math.min(pool.length, 30)))
     setIdx(0); setLives(3); setPts(0); setCorrect(0)
     setAnswered(false); setSelOpt(null); setShowFb(false)
     setShowMilestone(false); setBurst(null); setScreen('game')
@@ -578,7 +586,7 @@ export default function SproutsPlayzone() {
   function nextQ() {
     const next = idx + 1
     if (next >= total) { setScreen('result'); return }
-    if (next === Math.floor(total/2) && next > 0) setShowMilestone(true)
+    if ((next === 10 || next === 20) && next > 0) setShowMilestone(true)
     setIdx(next); setAnswered(false); setSelOpt(null); setShowFb(false)
   }
 
@@ -645,7 +653,30 @@ export default function SproutsPlayzone() {
 
       <div style={s.shell}>
 
-        {/* ========== HOME ========== */}
+
+        {/* ===== NAME SCREEN ===== */}
+        {screen === 'name' && (
+          <div style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'80vh'}}>
+            <div style={{background:'linear-gradient(135deg,#0d1e3a,#0a2a1a)',border:'2px solid #1e4d6b',borderRadius:28,padding:'40px 32px',maxWidth:500,width:'100%',textAlign:'center' as const}}>
+              <div style={{fontSize:'5rem',marginBottom:16}}>🌿</div>
+              <h1 style={{fontFamily:"'Fredoka One',cursive",fontSize:'2.2rem',color:'#fff',marginBottom:8}}>
+                Welcome to <span style={{color:'#7ddb7d'}}>Sprouts</span>!
+              </h1>
+              <p style={{color:'#8db4cc',fontWeight:600,fontSize:'1rem',marginBottom:28,lineHeight:1.6}}>
+                Ages 6-10 · 10 topics · Up to 30 questions each!
+              </p>
+              <div style={{marginBottom:20,textAlign:'left' as const}}>
+                <label style={{display:'block',fontSize:'0.85rem',color:'#8db4cc',fontWeight:700,marginBottom:8}}>What is your name? 👤</label>
+                <input type="text" placeholder="Type your name here..." value={nameInput} onChange={e => setNameInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleNameSubmit()} maxLength={20} autoFocus style={{background:'#0a1e2e',border:'2px solid #1e3a5a',borderRadius:14,padding:'14px 18px',color:'#e8f4ff',fontSize:'1.1rem',fontWeight:700,fontFamily:'inherit',width:'100%',outline:'none'}} />
+              </div>
+              <button onClick={handleNameSubmit} disabled={!nameInput.trim()} style={{width:'100%',padding:18,border:'none',borderRadius:18,background:nameInput.trim()?'linear-gradient(135deg,#1a6b1a,#3daa3d)':'#1a2a1a',color:nameInput.trim()?'#fff':'#3a5a3a',fontFamily:"'Fredoka One',cursive",fontSize:'1.35rem',cursor:nameInput.trim()?'pointer':'not-allowed'}}>
+                {nameInput.trim() ? "🚀 Let's Play!" : 'Enter your name above ☝️'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========== HOME ========== */
         {screen === 'home' && (
           <div>
             {/* HERO */}
@@ -857,7 +888,7 @@ export default function SproutsPlayzone() {
                 {resultPct>=80?'🏆':resultPct>=60?'⭐':'🌱'}
               </div>
               <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'2rem', color:'#fff', marginBottom:6 }}>
-                {resultPct>=80?'Amazing Sprout! 🏆':resultPct>=60?'Great Job! ⭐':'Keep Growing! 🌱'}
+  {resultPct>=80?`Amazing, ${playerName||'Sprout'}! 🏆`:resultPct>=60?`Great job, ${playerName||'Sprout'}! ⭐`:`Keep growing, ${playerName||'Sprout'}! 🌱`}
               </div>
               <div style={{ background:'linear-gradient(135deg,#1a5c1a,#2d8a2d)', display:'inline-block', padding:'10px 28px', borderRadius:30, color:'#fff', fontFamily:"'Fredoka One',cursive", fontSize:'1.5rem', margin:'14px 0' }}>
                 ⭐ {pts} points
@@ -871,6 +902,9 @@ export default function SproutsPlayzone() {
               <button onClick={() => { setScreen('home'); setCat(null); setLives(3); setPts(0) }} style={{ width:'100%', padding:13, border:'none', borderRadius:14, background:'linear-gradient(135deg,#1a5c1a,#2d8a2d)', color:'#fff', fontFamily:"'Fredoka One',cursive", fontSize:'1.15rem', cursor:'pointer' }}>
                 🏠 Pick New Topic
               </button>
+              <button onClick={()=>{setScreen('name');setPlayerName('');setNameInput('');setCat(null);setLives(3);setPts(0)}} style={{width:'100%',padding:13,border:'none',borderRadius:14,background:'linear-gradient(135deg,#0d2e4a,#185fa5)',color:'#fff',fontFamily:"'Fredoka One',cursive",fontSize:'1.15rem',cursor:'pointer',marginTop:10}}>
+              👤 New Player
+              </button>
             </div>
           </div>
         )}
@@ -880,4 +914,3 @@ export default function SproutsPlayzone() {
   )
 }
 
-import { useState } from 'react'
