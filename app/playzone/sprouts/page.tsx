@@ -1,910 +1,1440 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 
-// ─── TYPES ────────────────────────────────────────────────────
-type Diff = 'easy' | 'medium' | 'hard'
+type Grade = 'n1'|'n2'|'p1'|'p2'|'p3'|'p4'|'p5'|'p6'|'j1'|'j2'|'j3'|'s1'|'s2'|'s3'
 type Cat = 'food'|'energy'|'water'|'nature'|'climate'|'science'|'animals'|'soil'|'french'|'weather'
 
-interface SceneItem { emoji: string; label: string }
-interface Question {
-  t: 'text'|'match'|'drag'|'calc'|'story'
-  q: string
-  opts?: string[]
-  ans?: number
-  fact: string
-  pairs?: [string,string][]
-  items?: string[]
-  correct?: number[]
-  steps?: string[]
-  char?: string
-  story?: string
-}
+interface Q { q:string; opts:string[]; ans:number; fact:string; img?:string }
 
-// ─── QUESTION BANK (10 topics × 3 difficulties) ───────────────
-const QB: Record<Cat, Record<Diff, Question[]>> = {
-  food: {
-    easy: [
-      { t:'text', q:'Where does bread come from originally?', opts:['The sea 🌊','Wheat grown by farmers 🌾','Rock quarries','Pine trees'], ans:1, fact:'Wheat grows in fields → harvested → milled into flour → baked. That\'s your bread!' },
-      { t:'text', q:'What makes something a FRUIT scientifically?', opts:['It must be sweet','It holds seeds and grows from a flower 🌸','It grows underground','It must be colourful'], ans:1, fact:'Tomatoes, avocados and cucumbers are fruits too — they contain seeds from a flower!' },
-      { t:'text', q:'Which food group helps your muscles grow strong?', opts:['Carbohydrates 🍞','Fats 🧈','Proteins 🫘','Sugar 🍬'], ans:2, fact:'Beans, eggs, meat and fish are protein-rich — they build and repair your muscles!' },
-      { t:'text', q:'Why should we eat vegetables of many different colours?', opts:['To look pretty 🎨','Each colour has different vitamins & minerals','All vegetables are the same','Just for variety'], ans:1, fact:'Orange = vit A, green = iron, red = vit C. Eat the rainbow for full nutrition!' },
-      { t:'text', q:'What does "seasonal food" mean?', opts:['Very old food','Grown & eaten at its natural time of year 📅','Always expensive food','Only from supermarkets'], ans:1, fact:'Seasonal food is fresher, tastier and better for the planet — shorter journeys!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each FOOD to its correct nutrient group!',
-        pairs:[['Rice 🍚','Carbohydrate'],['Eggs 🥚','Protein'],['Carrot 🥕','Vitamin A'],['Milk 🥛','Calcium']],
-        fact:'Carbs = energy, protein = muscles, vitamins = immunity, calcium = strong bones!' },
-      { t:'calc', q:'A school wastes 50g of food per student per day. 200 students. How much wasted per week (5 days)?',
-        steps:['200 students × 50g = **10,000g** per day','10,000g × 5 days = **50,000g = 50kg** per week'],
-        opts:['10kg per week','50kg per week ✅','5kg per week','500g per week'], ans:1,
-        fact:'200 × 50 × 5 = 50,000g = 50kg wasted EVERY week. Small amounts really add up!' },
-      { t:'drag', q:'Put the FOOD SUPPLY CHAIN in order from start to finish:',
-        items:['🌳 Farm','🚛 Transport','🏭 Processing','🏪 Market','🍱 Your plate'],
-        correct:[0,1,2,3,4],
-        fact:'Farm → Transport → Process → Market → Your plate. Every meal travels a journey!' },
-    ],
-    hard: [
-      { t:'story', char:'👨‍🍳', story:'Chef Bisi wants to cook lunch for 4 children. Proteins build muscles, carbohydrates give energy, vitamins protect from illness, and calcium builds bones. She has rice, beans, carrots, spinach and milk.',
-        q:'Design the ONE meal containing ALL 4 nutrient groups! 🍽️',
-        opts:['Rice + Beans + Carrots + Spinach + Milk ✅ (all 4!)','Rice + Beans only (missing vitamins & calcium)','Carrots + Spinach only (no energy or protein)','Just rice and milk'],
-        ans:0, fact:'Rice (carbs) + Beans (protein) + Carrots (vit A) + Spinach (iron) + Milk (calcium) = perfectly balanced!' },
-      { t:'story', char:'🌾', story:'Farmer Hassan has 3 baskets of tomatoes, 12 tomatoes each. He sells 2/3 of all tomatoes at ₦50 each. His costs for the day were ₦400.',
-        q:'How much PROFIT does Farmer Hassan make? (Profit = earnings − costs) 💰',
-        opts:['₦800 profit ✅','₦1,200 profit (forgot costs)','₦600 profit','₦400 profit'],
-        ans:0, fact:'3×12=36 tomatoes. 2/3×36=24 sold. 24×₦50=₦1,200 earned. ₦1,200−₦400=₦800 profit!' },
-    ],
-  },
-  energy: {
-    easy: [
-      { t:'text', q:'What do we call energy made directly from sunlight?', opts:['Nuclear energy','Wind energy','Solar energy ☀️','Tidal energy'], ans:2, fact:'Solar panels convert sunlight directly into electricity — clean, free and unlimited!' },
-      { t:'text', q:'Which of these is a RENEWABLE energy source?', opts:['Coal ⬛','Oil 🛢️','Wind 💨','Natural gas'], ans:2, fact:'Wind never runs out — that\'s renewable. Coal and oil take millions of years to form!' },
-      { t:'text', q:'Why should we save electricity at home?', opts:['Makes lights brighter','Reduces pollution and saves money 💚','Makes appliances faster','Electricity is free anyway'], ans:1, fact:'Most electricity still comes from fossil fuels — saving energy = less pollution + money saved!' },
-      { t:'text', q:'What does a wind turbine do?', opts:['Cools rooms like a fan','Turns wind movement into electricity 💨⚡','Measures wind speed','Pumps water only'], ans:1, fact:'Wind spins blades → spins a generator inside → produces clean electricity!' },
-      { t:'text', q:'What is a fossil fuel?', opts:['A type of dinosaur bone','Coal, oil and gas formed from ancient organisms over millions of years ⬛','A renewable energy source','A type of solar panel'], ans:1, fact:'Fossil fuels formed over 300 million years — once burned, they\'re gone forever and release CO₂!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each energy SOURCE to its correct TYPE!',
-        pairs:[['Sunlight ☀️','Solar energy'],['Moving water 🌊','Hydropower'],['Wind 💨','Wind energy'],['Burning coal ⬛','Fossil fuel']],
-        fact:'Solar, wind and hydro are renewable. Coal is a fossil fuel — finite and polluting!' },
-      { t:'calc', q:'A village needs 500 units of electricity/day. Each solar panel = 200 units, each wind turbine = 150 units. Find the best combination!',
-        steps:['Need: **500 units/day**','2 solar panels: 2×200 = **400 units**','+ 1 wind turbine: **+150 units** = **550 units** ✅'],
-        opts:['1 solar only = 200 (not enough)','1 solar + 1 wind = 350 (not enough)','2 solar + 1 wind = 550 ✅','3 wind only = 450 (not enough)'],
-        ans:2, fact:'2×200 + 150 = 550 units. Exceeds 500 — the village has 50 spare units every day!' },
-      { t:'drag', q:'Sort the steps of how a SOLAR PANEL produces electricity:',
-        items:['☀️ Sunlight hits panel','⚛️ Electrons are freed','⚡ Current flows','🔌 Wire carries power','💡 Light turns on'],
-        correct:[0,1,2,3,4],
-        fact:'Photons knock electrons loose → flow as current → travel through wires → power appliances!' },
-    ],
-    hard: [
-      { t:'story', char:'⚡', story:'Scientist Zara measured city temperatures for 5 years: 28°C, 29°C, 29°C, 30°C, 31°C. She believes fossil fuel burning is causing warming and wants to calculate the average to confirm.',
-        q:'Calculate the AVERAGE temperature AND confirm if the trend is rising! 🌡️',
-        opts:['Average = 30°C, no clear trend','Average = 29.4°C, trend is RISING 📈 ✅','Average = 28°C, trend is falling','Not enough data to conclude'],
-        ans:1, fact:'(28+29+29+30+31)÷5 = 147÷5 = 29.4°C average. Each year goes up — clear warming trend!' },
-      { t:'story', char:'🔋', story:'A solar farm has 10 panels. Each produces 200 units/day. The farm operates 25 days a month. Electricity sells at ₦2 per unit. Running costs are ₦5,000 per month.',
-        q:'What is the farm\'s monthly PROFIT? Think step by step! 💡',
-        opts:['₦50,000 profit','₦95,000 profit ✅ (₦100,000 − ₦5,000 costs)','₦45,000 profit','₦5,000 profit'],
-        ans:1, fact:'10 panels × 200 × 25 days = 50,000 units. 50,000 × ₦2 = ₦100,000. Minus ₦5,000 = ₦95,000 profit!' },
-    ],
-  },
-  water: {
-    easy: [
-      { t:'text', q:'What percentage of Earth\'s water is fresh water?', opts:['About 97%','About 50%','About 3% 💧','About 25%'], ans:2, fact:'97% is saltwater. Only 3% is fresh — and most is frozen in glaciers!' },
-      { t:'text', q:'What is evaporation?', opts:['Water turning to ice','Liquid water turning into water vapour 💨','Rain falling from clouds','Water soaking into soil'], ans:1, fact:'The Sun heats water → molecules escape into air as invisible water vapour!' },
-      { t:'text', q:'How can we conserve water at home?', opts:['Run the tap while brushing teeth','Take extra long baths','Fix leaky taps and take shorter showers 🚿','Wash the car every day'], ans:2, fact:'A dripping tap wastes up to 20 litres a day! Small habits make a huge difference!' },
-      { t:'text', q:'What do plants use water for?', opts:['Making leaves green','Moving nutrients from roots to leaves and making food 🌱','Protecting from insects','Only making flowers bloom'], ans:1, fact:'Water carries dissolved nutrients up from roots through the stem to every cell!' },
-      { t:'text', q:'What is the water cycle?', opts:['A water pump machine','Continuous movement of water through evaporation, clouds and rain 🌧️','A type of waterfall','A water storage tank'], ans:1, fact:'Water evaporates → forms clouds → falls as rain → flows to rivers/oceans → evaporates again!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each WATER CYCLE stage to its description!',
-        pairs:[['Evaporation 💨','Water turns to vapour'],['Condensation ☁️','Vapour forms clouds'],['Precipitation 🌧️','Water falls as rain/snow'],['Collection 🌊','Water gathers in rivers/seas']],
-        fact:'Evaporation → Condensation → Precipitation → Collection → Evaporation again. Never stops!' },
-      { t:'calc', q:'A village of 300 people each needs 50 litres/day. Their reservoir holds 60,000 litres. How many days will the water last?',
-        steps:['Daily use: 300 × 50L = **15,000 litres** per day','Days: 60,000 ÷ 15,000 = **4 days**'],
-        opts:['2 days','4 days ✅','10 days','20 days'],
-        ans:1, fact:'300×50=15,000L/day. 60,000÷15,000=4 days. Find more water within 4 days!' },
-      { t:'drag', q:'Order the WATER CYCLE stages correctly:',
-        items:['☀️ Sun heats water','💨 Evaporation rises','☁️ Cloud forms','🌧️ Rain falls','🌊 Collected in rivers'],
-        correct:[0,1,2,3,4],
-        fact:'Sun heats → evaporation → condensation → precipitation → collection → repeats!' },
-    ],
-    hard: [
-      { t:'story', char:'💧', story:'Engineer Amara is building a water system for a school of 400 students. Each student needs 5 litres for drinking and 10 litres for washing per day. The water tank refills once every 3 days.',
-        q:'What is the MINIMUM tank size Amara must build? Think it through! 🏗️',
-        opts:['6,000 litre tank','18,000 litre tank ✅','5,000 litre tank','60,000 litre tank'],
-        ans:1, fact:'Each student: 5+10=15L/day. 400×15=6,000L/day. Tank for 3 days: 6,000×3=18,000 litres!' },
-    ],
-  },
-  nature: {
-    easy: [
-      { t:'text', q:'What is photosynthesis?', opts:['How plants drink water','How plants make food using sunlight, CO₂ and water 🌞','How leaves change colour','How roots grow deep'], ans:1, fact:'Leaves are tiny solar-powered food factories: Sun + CO₂ + water → food + oxygen!' },
-      { t:'text', q:'Which part of a plant absorbs water from the soil?', opts:['Leaves 🍃','Flowers 🌸','Roots 🪱','Seeds'], ans:2, fact:'Roots act like drinking straws with millions of tiny root hairs that suck up water!' },
-      { t:'text', q:'Why do leaves change colour in autumn?', opts:['They get sick','The green chlorophyll breaks down as the tree saves energy for winter 🍂','Rain washes colour away','The Sun changes'], ans:1, fact:'Chlorophyll (green) breaks down in autumn, revealing hidden yellow and red pigments!' },
-      { t:'text', q:'What is pollination?', opts:['When plants get watered','When pollen moves between flowers, allowing fruit to form 🐝','When leaves fall off','When seeds are planted'], ans:1, fact:'Bees carry pollen on their fuzzy bodies. Without pollination, most fruits wouldn\'t exist!' },
-      { t:'text', q:'What does a seed need to start growing?', opts:['Ice and darkness','Water and warmth 🌱','Salt and wind','Fire and smoke'], ans:1, fact:'Water wakes up the seed (germination) and warmth signals the right season to grow!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each plant PART to its correct JOB!',
-        pairs:[['Roots 🌿','Absorb water & anchor plant'],['Leaves 🍃','Make food via photosynthesis'],['Stem 🌱','Transport water & support'],['Flower 🌸','Attract pollinators for reproduction']],
-        fact:'Each part has a vital role — remove any one and the whole plant struggles!' },
-      { t:'drag', q:'Arrange the LIFE CYCLE of a plant in the correct order:',
-        items:['🫘 Seed','🌱 Germination','🌿 Growing plant','🌸 Flowering','🍎 Fruit with seeds'],
-        correct:[0,1,2,3,4],
-        fact:'Seed → germinates → grows → flowers → makes fruit → fruit holds new seeds → repeats!' },
-      { t:'calc', q:'A garden has 3 rows of tomatoes, 8 plants each. Each needs 2L water/day. A storm knocked out 1/4 of plants. How much water is needed now?',
-        steps:['Total plants: 3×8 = **24 plants**','Lost: 24÷4 = **6 plants**. Remaining: **18 plants**','Daily water: 18×2 = **36 litres**'],
-        opts:['24 litres','36 litres ✅ (18 plants × 2L)','48 litres','18 litres'],
-        ans:1, fact:'24 total − 6 lost = 18 plants. 18 × 2L = 36 litres needed daily after the storm!' },
-    ],
-    hard: [
-      { t:'story', char:'🌺', story:'A garden has 3 plant types needing different sunlight: Roses need 6 hrs/day, Sunflowers need 8 hrs, Beans need 4 hrs. This garden spot receives EXACTLY 7 hours of sun per day.',
-        q:'Which plants will be UNHAPPY and not grow well? Think carefully! 🌞',
-        opts:['Roses only (need 6h, have 7h ✅)','Sunflowers only — need 8h but only get 7h ❌ ✅','Beans only (need 4h, have 7h ✅)','All plants will be unhappy'],
-        ans:1, fact:'Roses 6h ✅. Beans 4h ✅. Only Sunflowers need 8h but get 7h — they won\'t thrive!' },
-      { t:'story', char:'🌳', story:'Farmer Nkechi has a 2-hectare farm. Her topsoil is only 10cm deep when it should be 30cm. She plants cover crops that STOP erosion AND add 2cm of new soil every 3 years.',
-        q:'After 9 YEARS with cover crops, how deep will the topsoil be? 🌱',
-        opts:['10cm (no change)','16cm ✅ (added 6cm over 9 years)','30cm (reached target!)','8cm (still eroding)'],
-        ans:1, fact:'No loss + 2cm every 3 years. 9 years = 3 periods × 2cm = 6cm added. 10+6=16cm!' },
-    ],
-  },
-  climate: {
-    easy: [
-      { t:'text', q:'What is global warming?', opts:['The Sun getting hotter','Earth\'s average temperature gradually rising due to greenhouse gases 🌡️','Oceans getting saltier','Winters getting longer'], ans:1, fact:'Greenhouse gases trap heat in the atmosphere — like a thickening blanket around Earth!' },
-      { t:'text', q:'How do trees help fight climate change?', opts:['They cool ground with shade only','They absorb CO₂ and store carbon 🌳','They make wind stronger','They produce rain directly'], ans:1, fact:'One mature tree absorbs ~22kg of CO₂ per year. A million trees = 22,000 tonnes absorbed!' },
-      { t:'text', q:'Which human activity releases the MOST greenhouse gases?', opts:['Reading books 📚','Burning fossil fuels for energy & transport 🚗','Planting trees','Swimming'], ans:1, fact:'Cars, power stations and factories burning coal/oil/gas release billions of tonnes of CO₂ yearly!' },
-      { t:'text', q:'What is a carbon footprint?', opts:['A fossil type','Total greenhouse gases produced by a person or activity 👣','A footprint left in coal','A type of energy'], ans:1, fact:'Every product, meal and journey has a carbon footprint. Knowing yours helps reduce it!' },
-      { t:'text', q:'What can young people do to help the climate?', opts:['Nothing — adults\' problem only','Reduce waste, plant trees, save energy, eat more plants 🌿','Only scientists can fix it','Move to another planet'], ans:1, fact:'Every action matters! Young people today will shape the climate policies of tomorrow!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each CLIMATE ACTION to its correct benefit!',
-        pairs:[['Plant trees 🌳','Absorb CO₂'],['Use solar panels ☀️','Replace fossil fuels'],['Eat less meat 🥗','Reduce methane emissions'],['Cycle or walk 🚲','Cut transport emissions']],
-        fact:'Every action tackles a different source of emissions — combining them multiplies the impact!' },
-      { t:'calc', q:'A school planted 100 trees. Each absorbs 22kg of CO₂/year. How much CO₂ is absorbed over 10 years?',
-        steps:['Per year: 100 × 22kg = **2,200 kg**','Over 10 years: 2,200 × 10 = **22,000 kg = 22 tonnes**'],
-        opts:['2,200 kg (1 year only)','22,000 kg (22 tonnes) ✅','220 kg','2,200,000 kg'],
-        ans:1, fact:'100 × 22 × 10 = 22,000kg = 22 tonnes of CO₂ captured! School tree-planting matters!' },
-      { t:'drag', q:'Order these CLIMATE ACTIONS from BIGGEST to smallest impact (CO₂ reduction):',
-        items:['✈️ Avoid flying','💡 Switch to solar','🚗 Drive less','🥩 Eat less meat','🌱 Plant trees'],
-        correct:[0,1,2,3,4],
-        fact:'Avoiding flights & switching to clean energy have the biggest impact. Every action counts!' },
-    ],
-    hard: [
-      { t:'story', char:'🧑‍🔬', story:'Climate scientist Kwame studied his city. Year 1: 28°C. Year 2: 29°C. Year 3: 29°C. Year 4: 30°C. Year 5: 31°C. He wants the average AND total rise over 5 years.',
-        q:'What is the average temperature AND how many degrees did it rise Year 1 to Year 5? 🌡️',
-        opts:['Average 30°C, rose 2°C','Average 29.4°C, rose 3°C ✅','Average 29°C, rose 1°C','Average 30°C, rose 3°C'],
-        ans:1, fact:'Average: (28+29+29+30+31)÷5=29.4°C. Rise: 31−28=3°C in 5 years. Very alarming rate!' },
-    ],
-  },
-  science: {
-    easy: [
-      { t:'text', q:'What does a microscope do?', opts:['Measures temperature','Magnifies tiny objects so we can see them 🔬','Predicts weather','Measures rainfall'], ans:1, fact:'Microscopes can magnify things 1,000× — revealing bacteria, cells and soil organisms!' },
-      { t:'text', q:'What is precision farming?', opts:['Growing only one crop','Using exact amounts of water/fertilizer only where each plant needs it 🎯','Farming by hand only','Only farming in cities'], ans:1, fact:'GPS, sensors and drones help farmers give each plant exactly what it needs — zero waste!' },
-      { t:'text', q:'What does a drone do on a modern farm?', opts:['Entertain tourists','Maps fields, spots sick plants and sprays accurately 🛸','Harvests crops manually','Waters by hand'], ans:1, fact:'Farm drones cover a 10-hectare field in under 20 minutes — spotting problems humans might miss!' },
-      { t:'text', q:'What is a soil sensor?', opts:['A type of worm','Device measuring soil moisture, temperature and nutrients 📡','A garden spade','A type of fertilizer'], ans:1, fact:'Smart sensors send real-time data to farmers\' phones — water only when and where needed!' },
-      { t:'text', q:'What does GPS stand for?', opts:['Giant Plant System','Global Positioning System 🛰️','Grand Plant Survey','Green Plant Science'], ans:1, fact:'GPS uses satellites to tell farmers their exact location on Earth — to the centimetre!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each FARM TECH TOOL to what it does!',
-        pairs:[['Drone 🛸','Maps fields & spots problems'],['Soil sensor 📡','Measures moisture & nutrients'],['GPS 🛰️','Tracks exact location'],['Weather station 🌡️','Records rain, wind & temperature']],
-        fact:'Modern farming uses all 4 tools together — tech + nature = smarter, sustainable agriculture!' },
-      { t:'calc', q:'AgriBot plants 60 seeds per hour. A field needs 720 seeds. AgriBot starts 8:00 AM with a 30-min break. What time does it finish?',
-        steps:['Work time: 720 ÷ 60 = **12 hours** planting','8:00 AM + 12h work + **30min break** = **8:30 PM** finish'],
-        opts:['8:00 PM (forgot the break)','8:30 PM ✅ (includes break)','9:00 PM','7:30 PM'],
-        ans:1, fact:'720÷60=12 hours work. 8:00AM + 12hrs = 8:00PM + 30min break = 8:30PM. Always include breaks!' },
-      { t:'drag', q:'Order the steps of a PRECISION IRRIGATION (smart watering) system:',
-        items:['📡 Sensor reads soil','📱 Data sent to phone','🤔 Farmer decides to water','💧 Pump activates','🌱 Plants watered exactly'],
-        correct:[0,1,2,3,4],
-        fact:'Collect data → analyse → decide → act → result. This loop makes precision farming so efficient!' },
-    ],
-    hard: [
-      { t:'story', char:'🤖', story:'Smart Farm Monitor shows: Crop A yields 15kg and earns ₦200/kg. Crop B yields 20kg and earns ₦150/kg. Total production costs are ₦2,500. The farmer needs at least ₦5,000 profit.',
-        q:'Calculate TOTAL PROFIT and decide if the farm meets its goal! 💹',
-        opts:['₦3,500 profit — below ₦5,000 goal ❌ ✅','₦6,000 profit — above goal ✅','₦7,000 profit — above goal','₦2,500 profit — below goal'],
-        ans:0, fact:'A: 15×₦200=₦3,000. B: 20×₦150=₦3,000. Total=₦6,000. Profit=₦6,000−₦2,500=₦3,500. Below ₦5,000!' },
-    ],
-  },
-  animals: {
-    easy: [
-      { t:'text', q:'Which animal is most important for pollinating food crops?', opts:['Lion 🦁','Bee 🐝','Shark 🦈','Eagle 🦅'], ans:1, fact:'Bees pollinate over 70% of the world\'s food crops. No bees = no fruits or many vegetables!' },
-      { t:'text', q:'What do earthworms do for the soil?', opts:['Eat all plant roots','Dig tunnels for air/water and add nutrients through waste 🪱','Make soil hard','Dry out the soil'], ans:1, fact:'One hectare of healthy soil can contain 3 million earthworms — nature\'s own soil engineers!' },
-      { t:'text', q:'What is a food chain?', opts:['A type of restaurant','Sequence showing who eats who in nature 🌿→🐛→🐦','A grocery chain','How food is transported'], ans:1, fact:'Energy flows: plants → herbivores → carnivores. Remove one link and the chain collapses!' },
-      { t:'text', q:'What does a caterpillar turn into?', opts:['A moth only','A bee','A butterfly or moth 🦋','A beetle'], ans:2, fact:'Metamorphosis: egg → caterpillar → chrysalis → butterfly. One of nature\'s greatest transformations!' },
-      { t:'text', q:'Why are birds important on a farm?', opts:['They look pretty only','They eat harmful insects and spread seeds 🐦','They scare away rain clouds','They produce fertilizer only'], ans:1, fact:'A single barn owl can eat 1,000 mice per year — protecting a farmer\'s grain store for free!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each ANIMAL to its role on a farm or in nature!',
-        pairs:[['Bee 🐝','Pollinates crops'],['Earthworm 🪱','Aerates soil'],['Ladybird 🐞','Eats aphid pests'],['Frog 🐸','Eats mosquitoes & flies']],
-        fact:'Every creature has a role — biodiversity keeps farms healthy without needing chemicals!' },
-      { t:'calc', q:'A field has 500 aphid insects. A colony of 20 ladybirds moves in. Each ladybird eats 50 aphids per day. How quickly are the aphids cleared?',
-        steps:['Daily consumption: 20 × 50 = **1,000 aphids** per day','But only **500 exist**! All eaten in: **less than 1 day!**'],
-        opts:['5 days to clear aphids','2 days to clear aphids','Less than 1 day ✅ (can eat more than exist!)','10 days to clear aphids'],
-        ans:2, fact:'20 ladybirds × 50 each = 1,000 capacity/day. Only 500 aphids exist — cleared in half a day!' },
-      { t:'drag', q:'Put this simple FOOD CHAIN in order (from energy source to top predator):',
-        items:['☀️ Sun','🌿 Grass','🐛 Caterpillar','🐦 Bird','🦅 Eagle'],
-        correct:[0,1,2,3,4],
-        fact:'Sun provides energy → grass captures it → caterpillar eats grass → bird eats caterpillar → eagle hunts birds!' },
-    ],
-    hard: [
-      { t:'story', char:'🦋', story:'A nature reserve has 5 bee colonies. Each colony has 40,000 bees. Scientists say at least 180,000 bees are needed to fully pollinate all plants. Each colony grows by 20% each season.',
-        q:'After ONE season of growth, will there be ENOUGH bees? Calculate precisely! 🐝',
-        opts:['200,000 bees — yes, enough! ✅','160,000 bees — not enough ❌','180,000 bees — exactly enough','240,000 bees — yes, enough ✅'],
-        ans:3, fact:'5 × 40,000 = 200,000 bees. Each grows 20%: 200,000 × 1.2 = 240,000 bees. Well above 180,000!' },
-    ],
-  },
-  soil: {
-    easy: [
-      { t:'text', q:'What is soil made of?', opts:['Only dirt and rocks','Rock particles, dead organisms, water, air and living creatures 🌍','Only sand','Only clay'], ans:1, fact:'Healthy soil is a living ecosystem! One teaspoon contains more organisms than people on Earth!' },
-      { t:'text', q:'What is composting?', opts:['A type of cooking','Turning food scraps and plant waste into rich plant food 🌱','Storing food underground','A water treatment'], ans:1, fact:'Composting turns kitchen waste into "black gold" — nutrient-rich material that makes plants thrive!' },
-      { t:'text', q:'What is soil erosion?', opts:['When soil gets wet','When topsoil is carried away by wind or water, leaving land bare 💨','When soil gets darker','When worms dig holes'], ans:1, fact:'Eroded soil takes 500 years to replace naturally. Trees and cover crops prevent erosion!' },
-      { t:'text', q:'Which soil colour usually means the most fertile soil?', opts:['Bright yellow','Pale grey','Dark brown or black 🟤','Bright red'], ans:2, fact:'Dark soil is rich in organic matter (humus) from decomposed plants — perfect for growing food!' },
-      { t:'text', q:'Why are earthworms important for soil health?', opts:['They eat all plant roots','They dig tunnels, add nutrients and help water soak in 🪱','They dry out the soil','They have no effect'], ans:1, fact:'Darwin called earthworms "nature\'s ploughs." Their burrows allow roots to breathe and water to drain!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each SOIL TYPE to what grows best in it!',
-        pairs:[['Sandy soil 🏖️','Cacti & root vegetables'],['Clay soil 🏺','Rice & wheat'],['Loam soil 🌱','Most vegetables & fruits'],['Peaty soil 🌿','Blueberries & heather']],
-        fact:'Loam (mix of sand, clay, silt and humus) is the "Goldilocks" soil — just right for most plants!' },
-      { t:'calc', q:'A compost bin processes 2kg of waste/week. A family produces 5kg of kitchen waste/week. After 4 weeks, how much unprocessed waste is waiting?',
-        steps:['Weekly surplus: 5 − 2 = **3kg unprocessed** per week','After 4 weeks: 3 × 4 = **12kg waiting**'],
-        opts:['4kg waiting','8kg waiting','12kg waiting ✅','20kg waiting'],
-        ans:2, fact:'5kg produced − 2kg processed = 3kg surplus/week. 3 × 4 = 12kg builds up. Need a bigger bin!' },
-      { t:'drag', q:'Order the COMPOSTING PROCESS from start to finish:',
-        items:['🍌 Add kitchen scraps','💧 Add moisture','🌡️ Heat builds up','🪱 Worms & bacteria work','🌱 Rich compost ready'],
-        correct:[0,1,2,3,4],
-        fact:'Add materials → moisture activates microbes → heat kills pathogens → organisms break it down → ready in 6–8 weeks!' },
-    ],
-    hard: [
-      { t:'story', char:'🌍', story:'Farmer Nkechi has a 2-hectare farm. Topsoil is only 10cm deep when it should be 30cm. Without cover crops she loses 5cm every 3 years. With cover crops: ZERO erosion AND gains 2cm every 3 years.',
-        q:'After 9 YEARS with cover crops, how deep will Nkechi\'s topsoil be? 🌱',
-        opts:['10cm (no change)','16cm ✅ (10cm + 6cm gained)','30cm (reached target!)','8cm (still eroding)'],
-        ans:1, fact:'No loss + 2cm every 3 years. 9 years = 3 periods × 2cm = 6cm added. 10+6=16cm!' },
-    ],
-  },
-  french: {
-    easy: [
-      { t:'text', q:'Comment dit-on "tree" en français?', opts:['Un arbre 🌳','Une fleur 🌸','Un nuage ☁️','Une rivière 🌊'], ans:0, fact:'Un arbre est une grande plante avec un tronc solide. Les arbres produisent de l\'oxygène!' },
-      { t:'text', q:'Qu\'est-ce qu\'une graine?', opts:['Une grande plante 🌳','La petite chose qu\'on plante pour faire pousser une nouvelle plante 🫘','Un insecte 🐛','De l\'eau 💧'], ans:1, fact:'La graine contient tout pour créer une nouvelle plante — c\'est le début de la vie végétale!' },
-      { t:'text', q:'Comment dit-on "sun" en français?', opts:['La lune 🌙','La pluie 🌧️','Le soleil ☀️','Le vent 💨'], ans:2, fact:'Le soleil est notre étoile — il nous donne la lumière et la chaleur nécessaires à toute vie!' },
-      { t:'text', q:'Quel insecte fabrique du miel?', opts:['Le papillon 🦋','La fourmi 🐜','L\'abeille 🐝','Le ver 🪱'], ans:2, fact:'L\'abeille visite les fleurs, récolte le nectar et le transforme en miel délicieux dans sa ruche!' },
-      { t:'text', q:'Comment dit-on "garden" en français?', opts:['La forêt 🌲','Le jardin 🌿','La mer 🌊','Le désert 🏜️'], ans:1, fact:'Le jardin est un espace cultivé où l\'on fait pousser des fleurs, des légumes et des herbes!' },
-    ],
-    medium: [
-      { t:'match', q:'Associe chaque mot français à sa traduction anglaise correcte!',
-        pairs:[['La racine 🌿','Root'],['La feuille 🍃','Leaf'],['La fleur 🌸','Flower'],['La graine 🫘','Seed']],
-        fact:'Les parties d\'une plante: racine (root), tige (stem), feuille (leaf), fleur (flower), graine (seed)!' },
-      { t:'calc', q:'Amina a 3 pots de fleurs. Chaque pot contient 4 fleurs. La pluie arrose ses fleurs 3 jours sur 7. Combien de fleurs a-t-elle en tout? (Attention — la pluie est une distraction!)',
-        steps:['Nombre de fleurs: 3 pots × 4 fleurs = **12 fleurs**','La pluie n\'est pas nécessaire pour ce calcul!'],
-        opts:['7 fleurs','9 fleurs','12 fleurs ✅','15 fleurs'],
-        ans:2, fact:'3 × 4 = 12 fleurs! Attention aux informations inutiles dans un problème — piège classique!' },
-      { t:'drag', q:'Mets le cycle de vie d\'une plante dans le bon ordre en français:',
-        items:['🫘 La graine','🌱 La germination','🌿 La plante','🌸 La floraison','🍎 Le fruit'],
-        correct:[0,1,2,3,4],
-        fact:'Graine → germe → pousse → fleurit → fait un fruit contenant de nouvelles graines. Le cycle continue!' },
-    ],
-    hard: [
-      { t:'story', char:'👩‍🌾', story:'Fatou visite une ferme avec sa classe. La fermière dit: «J\'ai 4 rangées de maïs avec 9 plants chacune. Une tempête a abîmé exactement 1/3 de tous mes plants. Chaque plant restant produira 3 épis de maïs.»',
-        q:'Combien d\'épis de maïs peut-on compter après la tempête? Réfléchis bien! 🌽',
-        opts:['72 épis ✅','108 épis (tous les plants)','36 épis (seulement les perdus)','54 épis'],
-        ans:0, fact:'4 × 9 = 36 plants. 1/3 abîmés = 12. Restants = 24. 24 × 3 épis = 72 épis de maïs!' },
-      { t:'story', char:'🌿', story:'Le professeur pose une devinette: «Je produis de l\'oxygène. J\'absorbe le CO₂. Je fais la photosynthèse. Les animaux mangent mes fruits. Mes racines boivent l\'eau. Sans moi, les humains ne peuvent pas respirer. Qui suis-je?»',
-        q:'Résous la devinette et explique comment tu as trouvé la réponse! 🌳',
-        opts:['Un animal 🦁 (il respire de l\'oxygène)','Une pierre 🪨 (elle est dans la nature)','Un arbre 🌳 — toutes les caractéristiques correspondent! ✅','Un nuage ☁️ (il produit la pluie)'],
-        ans:2, fact:'Produit O₂ ✅, absorbe CO₂ ✅, photosynthèse ✅, fruits comestibles ✅, racines ✅ — c\'est un arbre!' },
-    ],
-  },
-  weather: {
-    easy: [
-      { t:'text', q:'What causes wind?', opts:['Trees waving their branches','Differences in air temperature causing air to move 💨','Rain falling heavily','Clouds moving across the sky'], ans:1, fact:'Hot air rises, cool air rushes in to replace it — that movement is the wind we feel!' },
-      { t:'text', q:'What is the difference between weather and climate?', opts:['They mean the same thing','Weather = today; climate = long-term average pattern 📅','Climate = current temperature','Weather is outdoor; climate is indoor'], ans:1, fact:'Weather = today\'s rain. Climate = "this region gets rain every October." Climate is the big picture!' },
-      { t:'text', q:'What is humidity?', opts:['Temperature of the air','Amount of water vapour in the air 💦','How hard wind blows','Amount of sunshine'], ans:1, fact:'High humidity means air is full of water vapour — that\'s why hot humid days feel so sticky!' },
-      { t:'text', q:'Which season comes after summer in the Northern Hemisphere?', opts:['Spring 🌸','Winter ❄️','Autumn 🍂','Another summer'], ans:2, fact:'Summer → Autumn → Winter → Spring → Summer again. Each season lasts about 3 months!' },
-      { t:'text', q:'What is a thunderstorm?', opts:['Heavy snow with wind','Storm with lightning, thunder, heavy rain and strong winds ⛈️','A very sunny hot day','Fog that covers the ground'], ans:1, fact:'Lightning is a giant electric spark. Thunder is the sound of that spark heating air so fast it expands!' },
-    ],
-    medium: [
-      { t:'match', q:'Match each WEATHER TYPE to its correct description!',
-        pairs:[['Blizzard ❄️','Heavy snow + strong winds'],['Drought 🏜️','Long period with no rain'],['Tornado 🌪️','Violent rotating wind column'],['Flood 🌊','Too much water on usually dry land']],
-        fact:'Each extreme weather event has different causes and needs different preparation to stay safe!' },
-      { t:'calc', q:'A weather station recorded daily rainfall: Mon 12mm, Tue 0mm, Wed 8mm, Thu 15mm, Fri 5mm. What is the average daily rainfall?',
-        steps:['Total rainfall: 12+0+8+15+5 = **40mm**','Average per day: 40 ÷ 5 = **8mm per day**'],
-        opts:['5mm per day','8mm per day ✅','10mm per day','40mm per day'],
-        ans:1, fact:'(12+0+8+15+5)÷5 = 40÷5 = 8mm average. Meteorologists use averages to understand weather patterns!' },
-      { t:'drag', q:'Order the FOUR SEASONS correctly starting from Spring:',
-        items:['🌸 Spring','☀️ Summer','🍂 Autumn','❄️ Winter'],
-        correct:[0,1,2,3],
-        fact:'Spring (growth) → Summer (heat) → Autumn (harvest) → Winter (rest) → Spring again. Life\'s cycle!' },
-    ],
-    hard: [
-      { t:'story', char:'🌤️', story:'Young meteorologist Kwame studied climate change in his town. Over 10 years, the average summer temperature rose from 27°C to 32°C. He predicts that if this trend continues for another 10 years, summers will exceed 37°C.',
-        q:'Is Kwame\'s prediction mathematically correct? What is the rise per year? 📊',
-        opts:['Yes — rises 0.5°C/year, so +5°C in 10 more years = 37°C ✅','No — it will only reach 34°C','Yes — rises 1°C/year, reaching 42°C','Not enough data to calculate'],
-        ans:0, fact:'32−27=5°C rise over 10 years = 0.5°C/year. Another 10 years: 32+(0.5×10)=37°C. Kwame is right!' },
-    ],
-  },
-}
-
-// ─── CATEGORY CONFIG ─────────────────────────────────────────────
-const CATS: { id: Cat; icon: string; name: string; sub: string; color: string; bg: string; border: string }[] = [
-  { id:'food',    icon:'🍎', name:'Food & Nutrition',   sub:'Farm to plate',    color:'#f47aaa', bg:'#2a0f1a', border:'#f47aaa' },
-  { id:'energy',  icon:'⚡', name:'Energy & Power',     sub:'Sun, wind & more', color:'#f4b234', bg:'#2a1800', border:'#f4b234' },
-  { id:'water',   icon:'💧', name:'Water Cycle',        sub:'Oceans & rivers',  color:'#5ab8f0', bg:'#002840', border:'#5ab8f0' },
-  { id:'nature',  icon:'🌱', name:'Garden & Plants',    sub:'Seeds & growth',   color:'#7ddb7d', bg:'#0a2a0a', border:'#7ddb7d' },
-  { id:'climate', icon:'🌍', name:'Climate & Earth',    sub:'Our planet',       color:'#9a9aff', bg:'#1a1a2a', border:'#9a9aff' },
-  { id:'science', icon:'🔬', name:'Farm Science',       sub:'Tech & tools',     color:'#5ae8f0', bg:'#00222a', border:'#5ae8f0' },
-  { id:'animals', icon:'🐛', name:'Animals & Insects',  sub:'Farm creatures',   color:'#f48a3a', bg:'#2a1200', border:'#f48a3a' },
-  { id:'soil',    icon:'🪱', name:'Soil & Compost',     sub:"Earth's recipe",   color:'#c89a4a', bg:'#1e1200', border:'#c89a4a' },
-  { id:'french',  icon:'🇫🇷', name:'Français · Nature', sub:'Le jardin',        color:'#7ab8ff', bg:'#00043a', border:'#7ab8ff' },
-  { id:'weather', icon:'⛅', name:'Weather & Seasons',  sub:'Rain & sunshine',  color:'#5acef0', bg:'#001a2a', border:'#5acef0' },
+const GRADES: {id:Grade;label:string;emoji:string;color:string;desc:string}[] = [
+  {id:'n1',label:'Nursery 1',emoji:'🌱',color:'#ff9f43',desc:'Ages 3-4'},
+  {id:'n2',label:'Nursery 2',emoji:'🌿',color:'#ffd32a',desc:'Ages 4-5'},
+  {id:'p1',label:'Primary 1',emoji:'🌸',color:'#0be881',desc:'Ages 6-7'},
+  {id:'p2',label:'Primary 2',emoji:'🌺',color:'#05c46b',desc:'Ages 7-8'},
+  {id:'p3',label:'Primary 3',emoji:'🌻',color:'#00d8d6',desc:'Ages 8-9'},
+  {id:'p4',label:'Primary 4',emoji:'🌼',color:'#0fbcf9',desc:'Ages 9-10'},
+  {id:'p5',label:'Primary 5',emoji:'⭐',color:'#4bcffa',desc:'Ages 10-11'},
+  {id:'p6',label:'Primary 6',emoji:'🏅',color:'#575fcf',desc:'Ages 11-12'},
+  {id:'j1',label:'JSS 1',emoji:'🔬',color:'#ef5777',desc:'Ages 12-13'},
+  {id:'j2',label:'JSS 2',emoji:'⚗️',color:'#f53b57',desc:'Ages 13-14'},
+  {id:'j3',label:'JSS 3',emoji:'🧪',color:'#c44569',desc:'Ages 14-15'},
+  {id:'s1',label:'SSS 1',emoji:'🎓',color:'#e84393',desc:'Ages 15-16'},
+  {id:'s2',label:'SSS 2',emoji:'🏆',color:'#9c88ff',desc:'Ages 16-17'},
+  {id:'s3',label:'SSS 3',emoji:'👑',color:'#ffd32a',desc:'Ages 17-18'},
 ]
 
-const DIFF_PTS: Record<Diff,number> = { easy:5, medium:10, hard:15 }
+const CATS: {id:Cat;icon:string;name:string;color:string;bg:string;scene:string}[] = [
+  {id:'food',   icon:'🍎',name:'Food & Farming',   color:'#ff6b9d',bg:'#2d0a1a',scene:'🌾🍎🥕🐓🥬'},
+  {id:'energy', icon:'⚡',name:'Energy & Power',   color:'#ffd32a',bg:'#1a1200',scene:'☀️💨🌊⚡🔋'},
+  {id:'water',  icon:'💧',name:'Water & Oceans',   color:'#4bcffa',bg:'#001a2d',scene:'🌊💧🐠🌧️🏔️'},
+  {id:'nature', icon:'🌱',name:'Plants & Nature',  color:'#0be881',bg:'#001a0d',scene:'🌳🌸🦋🐛🌿'},
+  {id:'climate',icon:'🌍',name:'Climate & Earth',  color:'#a29bfe',bg:'#1a1040',scene:'🌍☀️❄️🌡️🌪️'},
+  {id:'science',icon:'🔬',name:'Farm Science',     color:'#00cec9',bg:'#001a1a',scene:'🛸📡🌾🤖💻'},
+  {id:'animals',icon:'🐾',name:'Animals & Insects',color:'#fd9644',bg:'#1a0a00',scene:'🐝🦋🐸🦁🐘'},
+  {id:'soil',   icon:'🪱',name:'Soil & Compost',   color:'#e17055',bg:'#1a0800',scene:'🪱🌱🍂🏺🌍'},
+  {id:'french', icon:'🇫🇷',name:'Français Nature', color:'#74b9ff',bg:'#001040',scene:'🌳🦋🌸💧☀️'},
+  {id:'weather',icon:'⛅',name:'Weather & Seasons',color:'#55efc4',bg:'#001a14',scene:'☀️🌧️❄️🌪️🌈'},
+]
+
+const QB: Record<Cat, Record<Grade, Q[]>> = {
+  food: {
+      n1: [
+        {q:"What colour is a ripe banana?", opts:["Red 🔴", "Yellow 🟡", "Blue 🔵", "Green 🟢"], ans:1, fact:"Ripe bananas are bright yellow! When green they are not ready to eat!", img:"🍌🟡✨"},
+        {q:"Which food comes from a cow?", opts:["Eggs 🥚", "Honey 🍯", "Milk 🥛", "Bread 🍞"], ans:2, fact:"Cows give us milk! We can drink it or make cheese and butter!", img:"🐄🥛💛"},
+        {q:"Which one is a fruit?", opts:["Carrot 🥕", "Potato 🥔", "Apple 🍎", "Bread 🍞"], ans:2, fact:"An apple is a fruit! It is sweet and grows on a tree!", img:"🍎🌳🌸"},
+        {q:"What do plants need to grow?", opts:["Chocolate", "Water and sunlight 💧☀️", "Only darkness", "Stones"], ans:1, fact:"Plants need water and sunlight to grow big and strong!", img:"🌱💧☀️"},
+        {q:"Which food gives us energy?", opts:["Stones", "Rice 🍚", "Sand", "Mud"], ans:1, fact:"Rice gives us energy! It is a carbohydrate that fuels our body!", img:"🍚⚡🏃"},
+        {q:"Where do strawberries grow?", opts:["In the sky", "Underground", "On plants near the ground 🍓", "In water"], ans:2, fact:"Strawberries grow on small plants very close to the ground!", img:"🍓🌱🌿"},
+        {q:"What colour is a ripe tomato?", opts:["Blue", "Purple", "Red 🍅", "Black"], ans:2, fact:"Ripe tomatoes are bright red! They are actually a fruit not a vegetable!", img:"🍅🔴☀️"},
+        {q:"Which animal gives us eggs?", opts:["Cow 🐄", "Hen 🐔", "Cat 🐱", "Dog 🐶"], ans:1, fact:"Hens lay eggs every day! Eggs are full of protein!", img:"🐔🥚🌅"},
+        {q:"Which food is a vegetable?", opts:["Mango 🥭", "Banana 🍌", "Spinach 🥬", "Grape 🍇"], ans:2, fact:"Spinach is a dark green vegetable full of iron and vitamins!", img:"🥬💪🌱"},
+        {q:"What is honey made by?", opts:["Ants 🐜", "Bees 🐝", "Butterflies 🦋", "Spiders 🕷️"], ans:1, fact:"Bees collect nectar from flowers and turn it into sweet honey!", img:"🐝🍯🌸"},
+      ],
+      n2: [
+        {q:"Which food helps our eyes?", opts:["Sweets 🍬", "Carrot 🥕", "Biscuits", "Chips"], ans:1, fact:"Carrots contain Vitamin A which keeps our eyes healthy and sharp!", img:"🥕👁️✨"},
+        {q:"Where does orange juice come from?", opts:["A factory", "Oranges 🍊", "Milk", "Underground"], ans:1, fact:"Orange juice is squeezed from fresh oranges full of Vitamin C!", img:"🍊💛🥤"},
+        {q:"Which food makes our bones strong?", opts:["Sweets", "Crisps", "Milk 🥛", "Fizzy drinks"], ans:2, fact:"Milk has calcium which makes our bones and teeth very strong!", img:"🥛🦴💪"},
+        {q:"What meal do we eat first in the morning?", opts:["Dinner", "Lunch", "Supper", "Breakfast 🌅"], ans:3, fact:"Breakfast is our first meal of the day and gives us energy to learn!", img:"🌅🍳☕"},
+        {q:"Where does bread come from?", opts:["Trees", "The sea", "A bakery using wheat 🌾", "Underground"], ans:2, fact:"Bread is made from wheat flour that is baked in a hot oven!", img:"🌾🍞🔥"},
+        {q:"Which is healthier to eat?", opts:["Sweets 🍬", "Chocolate bar", "Fresh apple 🍎", "Crisps"], ans:2, fact:"Fresh fruit like apples give us vitamins and natural energy!", img:"🍎✅💪"},
+        {q:"What colour is broccoli?", opts:["Red", "Yellow", "Purple", "Green 🥦"], ans:3, fact:"Broccoli is dark green and packed with vitamins and fibre!", img:"🥦💚🌿"},
+        {q:"What do we use to eat food properly?", opts:["Hands only", "Fork and spoon 🍴", "Scissors", "Ruler"], ans:1, fact:"We use a fork and spoon to eat our food neatly and safely!", img:"🍴🍽️😋"},
+        {q:"Which food comes from under the ground?", opts:["Mango", "Orange", "Potato 🥔", "Banana"], ans:2, fact:"Potatoes are root vegetables that grow underground!", img:"🥔🌱🪱"},
+        {q:"What colour are peas?", opts:["Red", "Orange", "Green 🫛", "Yellow"], ans:2, fact:"Peas are small round green vegetables full of protein and goodness!", img:"🫛💚🌿"},
+      ],
+      p1: [
+        {q:"Which part of a plant do we eat in carrots?", opts:["The flower", "The leaf", "The root 🥕", "The fruit"], ans:2, fact:"Carrots are roots! They grow underground and store nutrients!", img:"🥕🌱🪱"},
+        {q:"What gives bread its energy?", opts:["Protein", "Carbohydrates 🌾", "Fat", "Vitamins"], ans:1, fact:"Bread contains carbohydrates which give our body energy to work and play!", img:"🍞⚡🌾"},
+        {q:"Which food helps us fight illness?", opts:["Sweets", "Fruits with Vitamin C 🍊", "Chips", "Fizzy drinks"], ans:1, fact:"Vitamin C in oranges and lemons helps our immune system fight germs!", img:"🍊🛡️💪"},
+        {q:"Which food is rich in protein?", opts:["White bread", "Boiled eggs 🥚", "Plain pasta", "Sweets"], ans:1, fact:"Eggs are packed with protein which builds and repairs our muscles!", img:"🥚💪🐔"},
+        {q:"Where does cooking oil come from?", opts:["Stones", "Plants like palm or sunflower 🌻", "Clouds", "Sand"], ans:1, fact:"Cooking oil is pressed from plants like palm, sunflower and groundnut!", img:"🌻🫙🌿"},
+        {q:"What does a farmer do?", opts:["Fixes cars", "Grows food for everyone 🌾", "Builds houses", "Drives lorries"], ans:1, fact:"Farmers grow the food that feeds our whole community and country!", img:"🌾👨‍🌾🚜"},
+        {q:"Which vitamin comes from sunlight?", opts:["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D ☀️"], ans:3, fact:"Our skin makes Vitamin D in sunlight — good for strong bones!", img:"☀️🦴💛"},
+        {q:"What is a food market?", opts:["A place to sleep", "Where fresh food is bought and sold 🛒", "A school", "A hospital"], ans:1, fact:"Food markets sell fresh vegetables, fruits, meat and grains from farms!", img:"🛒🥕🍅🌽"},
+        {q:"Which food makes our blood healthy?", opts:["Sweets", "Spinach with iron 🥬", "Biscuits", "Fizzy drinks"], ans:1, fact:"Spinach has iron which helps our blood carry oxygen around the body!", img:"🥬❤️💪"},
+        {q:"What do we call people who grow our food?", opts:["Doctors", "Teachers", "Farmers 👨‍🌾", "Engineers"], ans:2, fact:"Farmers are the people who grow all the food we eat every day!", img:"👨‍🌾🌾✅"},
+      ],
+      p2: [
+        {q:"What is photosynthesis?", opts:["Animals breathing", "Plants making food from sunlight 🌞", "Cooking food", "Food rotting"], ans:1, fact:"Plants use sunlight plus water plus CO₂ to make sugar — the start of all food!", img:"🌞🌿💚"},
+        {q:"Which food contains the most iron?", opts:["White bread", "Spinach 🥬", "Butter", "Orange juice"], ans:1, fact:"Spinach is full of iron which helps make red blood cells carry oxygen!", img:"🥬❤️💪"},
+        {q:"What happens when food rots?", opts:["It gets tastier", "Bacteria make it unsafe 🦠", "It becomes medicine", "Nothing"], ans:1, fact:"Bacteria and fungi decompose food making it unsafe to eat!", img:"🦠❌🧊"},
+        {q:"What is the food chain?", opts:["A way to buy food", "Who eats who in nature 🌿→🐛→🐦", "A type of shop", "How food is cooked"], ans:1, fact:"Energy passes through food chains: plants to herbivores to carnivores!", img:"🌿🐛🐦⚡"},
+        {q:"What is food security?", opts:["Locked fridges", "Everyone having enough healthy food 🍽️", "Expensive food", "Frozen food"], ans:1, fact:"Food security means every person has access to enough safe nutritious food!", img:"🍽️🌍✅"},
+        {q:"Why eat different coloured vegetables?", opts:["They taste nicer", "Each colour has different vitamins 🌈", "They are cheaper", "They look pretty"], ans:1, fact:"Different coloured vegetables have different vitamins — eat the rainbow every day!", img:"🌈🥕🥦🍅"},
+        {q:"What is a legume?", opts:["A type of fruit", "Beans and peas that fix nitrogen 🫘", "A root vegetable", "A grain"], ans:1, fact:"Legumes like beans and groundnuts add natural nitrogen back into soil!", img:"🫘🌱🪱"},
+        {q:"Where does palm oil come from?", opts:["Rocks", "Palm trees 🌴", "The sea", "Underground"], ans:1, fact:"Palm oil is pressed from the fruit of oil palm trees — very common in Nigeria!", img:"🌴🫙🌿"},
+        {q:"What makes food go bad quickly?", opts:["Too much water", "Bacteria and heat 🌡️", "Sunlight only", "Fresh air"], ans:1, fact:"Heat speeds up bacterial growth — refrigeration slows food spoilage!", img:"🌡️🦠❌"},
+        {q:"Which food gives us carbohydrates for energy?", opts:["Eggs", "Fish", "Yam and rice 🍚", "Meat"], ans:2, fact:"Yam, rice, cassava and plantain are carbohydrate staples that fuel our body!", img:"🍚⚡🌾"},
+      ],
+      p3: [
+        {q:"What is composting?", opts:["Burning rubbish", "Turning food scraps into plant food 🌱", "Freezing food", "Cooking leftovers"], ans:1, fact:"Composting recycles organic waste into rich natural soil fertiliser!", img:"🌱🍂🪱"},
+        {q:"What is irrigation?", opts:["Watering crops artificially 💧", "Cutting down trees", "Burning crop waste", "Removing weeds"], ans:0, fact:"Irrigation brings water to crops in dry areas using pipes, channels or sprinklers!", img:"💧🌾🚰"},
+        {q:"What is organic food?", opts:["Always expensive food", "Food grown without artificial chemicals 🌿", "Only vegetables", "Only fruits"], ans:1, fact:"Organic farming avoids artificial pesticides and fertilisers — better for nature!", img:"🌿✅🐝"},
+        {q:"What does crop rotation do?", opts:["Damages soil", "Keeps soil healthy by changing crops each season 🔄", "Wastes water", "Costs more"], ans:1, fact:"Rotating crops like beans with maize adds nutrients back into the soil naturally!", img:"🔄🫘🌾"},
+        {q:"Which cooking method keeps the most vitamins?", opts:["Boiling for a long time", "Deep frying", "Steaming 🥦", "None of them"], ans:2, fact:"Steaming preserves vitamins much better than boiling where nutrients escape into water!", img:"🥦💨✅"},
+        {q:"What is food preservation?", opts:["Making food taste better", "Methods to make food last longer safely 🧊", "Growing more food", "Selling food faster"], ans:1, fact:"Preservation methods like drying, smoking, salting and freezing prevent food going bad!", img:"🧊🧂🔥✅"},
+        {q:"What mineral makes plants green?", opts:["Iron", "Calcium", "Chlorophyll and magnesium 🟢", "Salt"], ans:2, fact:"Chlorophyll makes plants green and uses magnesium — it powers photosynthesis!", img:"🟢🌿☀️"},
+        {q:"What is food waste?", opts:["Cooking too much", "Throwing away edible food wasting resources 🗑️", "Spoiled food only", "Leftovers always"], ans:1, fact:"Food waste uses land, water and energy for nothing — reducing waste helps the planet!", img:"🗑️💧🌍❌"},
+        {q:"Why are pollinators important for food?", opts:["They eat pests", "They help plants reproduce making fruits and seeds 🐝", "They make soil", "They bring rain"], ans:1, fact:"Bees and other pollinators transfer pollen between flowers enabling fruit to form!", img:"🐝🌸🍎✅"},
+        {q:"What is a food web?", opts:["How to buy food", "All feeding connections in an ecosystem 🕸️", "How food is cooked", "Where food is sold"], ans:1, fact:"A food web shows how all organisms in an ecosystem are connected through eating!", img:"🕸️🌿🐛🦅"},
+      ],
+      p4: [
+        {q:"What is the nitrogen cycle?", opts:["Only about weather", "How nitrogen moves between air, soil and living things 🔄", "A type of farming", "A food chain"], ans:1, fact:"Plants absorb nitrogen from soil, animals eat plants, decomposers return it to soil!", img:"🔄🌿🪱💨"},
+        {q:"What causes food poisoning?", opts:["Eating too fast", "Harmful bacteria in contaminated food 🦠", "Eating vegetables", "Drinking water"], ans:1, fact:"Bacteria like Salmonella in unsafe food cause vomiting and diarrhoea — very dangerous!", img:"🦠🤒❌"},
+        {q:"What role do pollinators play in food?", opts:["No role", "They help plants reproduce to make fruits and seeds 🐝", "They eat crops", "They make soil"], ans:1, fact:"Bees and butterflies transfer pollen between flowers enabling fruit and seed formation!", img:"🐝🌸🍎✅"},
+        {q:"What is agroforestry?", opts:["Cutting forests", "Growing crops and trees together on the same land 🌳🌾", "Forest conservation", "Tree farming alone"], ans:1, fact:"Agroforestry combines trees with crops — improving soil, biodiversity and income!", img:"🌳🌾💚✅"},
+        {q:"What is food processing?", opts:["Growing food", "Transforming raw food into products we can buy 🏭", "Cooking at home", "Eating quickly"], ans:1, fact:"Food processing includes cleaning, cooking, preserving and packaging food for sale!", img:"🏭🥫🧃✅"},
+        {q:"What is food sovereignty?", opts:["Selling food abroad", "People's right to control their own food systems 🌾", "Only local food", "Avoiding imports"], ans:1, fact:"Food sovereignty means communities decide how their food is grown and shared!", img:"🌾🤝🌍"},
+        {q:"What is aquaculture?", opts:["Water sports", "Farming fish and seafood in controlled water environments 🐟", "Watering crops", "Studying the ocean"], ans:1, fact:"Aquaculture grows fish, prawns and other seafood sustainably for food production!", img:"🐟💧🌊🌿"},
+        {q:"What is zero hunger?", opts:["Not eating", "UN goal to ensure everyone has enough nutritious food 🌍", "A diet plan", "Fasting"], ans:1, fact:"UN Sustainable Development Goal 2 aims to end hunger for all people by 2030!", img:"🌍🍽️✅🕊️"},
+        {q:"What is the difference between hunger and malnutrition?", opts:["They are the same", "Hunger is no food; malnutrition is wrong nutrients 🍽️", "Only children get it", "Only about quantity"], ans:1, fact:"Hunger means not enough food. Malnutrition means not enough of the right nutrients!", img:"🍽️📊🌍"},
+        {q:"What is food biotechnology?", opts:["Old farming", "Using science and technology to improve food production 🧬", "Organic farming", "Traditional cooking"], ans:1, fact:"Biotechnology improves crops through genetic tools making them more nutritious or resistant!", img:"🧬🌾💻✅"},
+      ],
+      p5: [
+        {q:"What are food miles?", opts:["How far we walk to buy food", "Distance food travels from farm to consumer 🚛", "Nutritional value", "Food portions"], ans:1, fact:"High food miles mean more fuel used and higher carbon emissions from transport!", img:"🚛🌍💨📏"},
+        {q:"What is vertical farming?", opts:["Farming on steep hills", "Growing food in stacked indoor layers under lights 🏢", "Building tall silos", "Climbing plants"], ans:1, fact:"Vertical farms grow food in city buildings using LED lights — uses 95% less water!", img:"🏢💡🌿✅"},
+        {q:"What are macronutrients?", opts:["Small vitamins", "Carbohydrates, protein and fat needed in large amounts 📊", "Minerals only", "All vitamins"], ans:1, fact:"Macronutrients are carbs for energy, protein for muscles and fat for cell function!", img:"📊🍎🥩🌿"},
+        {q:"What is food insecurity?", opts:["Locked food storage", "Unreliable access to enough safe nutritious food 😟", "Expensive supermarkets", "Food labels"], ans:1, fact:"Food insecurity means people do not know if they will have enough food tomorrow!", img:"😟🍽️❓🌍"},
+        {q:"What is biofortification?", opts:["Artificial vitamin pills", "Breeding crops to be naturally more nutritious 🌾", "Chemical enrichment", "Food colouring"], ans:1, fact:"Biofortified crops like orange sweet potato have extra Vitamin A bred in naturally!", img:"🌾🥕💛✅"},
+        {q:"What is the Green Revolution?", opts:["Painting farms green", "Major increase in crop production through new technology 🌾", "Going organic", "Climate farming"], ans:1, fact:"The Green Revolution introduced high-yield seeds, fertilisers and irrigation globally!", img:"🌾📈🔬🌍"},
+        {q:"What is food fortification?", opts:["Making food spicy", "Adding vitamins and minerals to food to prevent deficiency 💊", "Food colouring", "Making food bigger"], ans:1, fact:"Fortified foods like iodised salt and vitamin A rice prevent nutritional deficiencies!", img:"💊🧂🌾✅"},
+        {q:"What causes soil degradation?", opts:["Too much rain", "Overfarming, chemicals and erosion removing nutrients 🏜️", "Growing vegetables", "Normal farming"], ans:1, fact:"Poor farming practices deplete nutrients, erode topsoil and reduce farm productivity!", img:"🏜️❌🌾😟"},
+        {q:"What is the water footprint of food?", opts:["How wet food is", "Total water used to produce food from farm to fork 💧", "Irrigation only", "Rain on farms"], ans:1, fact:"A beef burger uses about 2,400 litres of water — much more than vegetables!", img:"💧🐄🍔📊"},
+        {q:"What is food literacy?", opts:["Reading food fiction", "Understanding how to choose and prepare nutritious food 📚", "Cooking lessons only", "Food history"], ans:1, fact:"Food literacy means understanding nutrition labels, cooking skills and healthy choices!", img:"📚🍽️🧠✅"},
+      ],
+      p6: [
+        {q:"What is a calorie?", opts:["A type of vitamin", "A unit measuring food energy 🔥", "A type of mineral", "A food type"], ans:1, fact:"Calories measure the energy in food — our bodies need them to function every day!", img:"🔥⚡🍽️📏"},
+        {q:"What is sustainable agriculture?", opts:["Growing one crop", "Farming meeting today's needs without harming future generations 🌿", "Using more chemicals", "City farming"], ans:1, fact:"Sustainable agriculture balances productivity with environmental protection long-term!", img:"🌿♻️🌾✅"},
+        {q:"What are phytonutrients?", opts:["Animal proteins", "Plant compounds that protect our health 🌿", "Artificial additives", "Food preservatives"], ans:1, fact:"Phytonutrients in colourful plants protect against disease — eat diverse plant foods!", img:"🌿🍇🍅💚"},
+        {q:"What is GM food?", opts:["Gently made food", "Genetically Modified food where DNA is changed for specific traits 🧬", "Good and moist food", "Green market food"], ans:1, fact:"GM crops can be engineered for drought resistance, pest resistance or higher nutrition!", img:"🧬🌽🔬📊"},
+        {q:"What is a food desert?", opts:["Dry climate farming", "Area where people lack access to affordable healthy food 🏙️", "Empty supermarket", "Desert farming"], ans:1, fact:"Food deserts are often in low-income areas where fresh produce is unavailable nearby!", img:"🏙️❌🍎😟"},
+        {q:"What is food system resilience?", opts:["Tough packaging", "Ability of food systems to recover from shocks and stress 🔄", "Strong farmers only", "Imported food"], ans:1, fact:"Resilient food systems use diverse crops, local food and sustainable practices!", img:"🔄🌾🤝✅"},
+        {q:"What is food literacy's importance?", opts:["Just for nutrition", "Empowers people to make healthy food choices and reduce waste 📚", "Only for chefs", "For food businesses only"], ans:1, fact:"Food literate people make better nutritional choices benefiting their health and the planet!", img:"📚🍽️🧠✅"},
+        {q:"What connects food and climate change?", opts:["Nothing", "Climate change threatens crops reducing food security 🌡️🌾", "Only natural disasters", "Ocean food only"], ans:1, fact:"Rising temperatures, droughts and floods destroy harvests threatening global food supply!", img:"🌡️🌾😟❌"},
+        {q:"What is food chain vulnerability?", opts:["Weak packaging", "How easily food supply can be disrupted by climate or conflict 🌍", "Soft food textures", "Poor cooking"], ans:1, fact:"Food chains break when farms fail, transport stops or conflicts disrupt supply!", img:"🌍⚠️🌾😟"},
+        {q:"What is the right to food?", opts:["Preference only", "A fundamental human right ensuring everyone can access adequate food ⚖️", "Charity food only", "Optional right"], ans:1, fact:"The UN recognises adequate food as a fundamental human right under international law!", img:"⚖️🌍🍽️✅"},
+      ],
+      j1: [
+        {q:"What is nitrogen fixation?", opts:["Plants absorbing sunlight", "Bacteria converting atmospheric nitrogen into soil nutrients 🫘", "Water cycle", "Photosynthesis"], ans:1, fact:"Rhizobium bacteria in legume roots fix N₂ gas into compounds usable by plants!", img:"🫘🪱🔬💚"},
+        {q:"What is the carbon footprint of food?", opts:["Amount of food grown", "Total CO₂ produced in food production and transport 💨", "Food packaging weight", "Calories in food"], ans:1, fact:"Meat especially beef has very high carbon footprint — plant foods are much lower!", img:"💨🐄🌿📊"},
+        {q:"What is precision agriculture?", opts:["Exact farming times", "Using data and technology to optimise farm inputs and yields 📡", "Farming one crop", "Very neat fields"], ans:1, fact:"GPS, sensors, drones and AI help farmers apply exactly the right inputs where needed!", img:"📡🛸🌾💻"},
+        {q:"What is eutrophication from farming?", opts:["More food in water", "Fertiliser runoff causing algae overgrowth that kills aquatic life 🌿", "Water treatment", "Fish farming"], ans:1, fact:"Excess nitrates from farms enter rivers causing algae blooms that deplete oxygen!", img:"🌿💧❌🐠"},
+        {q:"What is food traceability?", opts:["Food being tasty", "Tracking food from farm through production to consumer 📱", "Recipe following", "Food history"], ans:1, fact:"Traceability systems let consumers track exactly where their food came from!", img:"📱🌾🚛🏪"},
+        {q:"What causes famine?", opts:["People choosing not to eat", "Combination of drought, conflict, poverty and poor governance 😟", "Only bad weather", "Individual laziness"], ans:1, fact:"Famines result from multiple failures — crop failure, conflict and poverty together!", img:"😟🌧️⚔️❌"},
+        {q:"What is integrated pest management?", opts:["Using maximum pesticides", "Diverse strategies to control pests with minimal chemicals 🐛", "Ignoring pests", "Only organic methods"], ans:1, fact:"IPM combines biological controls, resistant varieties and minimal targeted pesticides!", img:"🐛🔬🌿✅"},
+        {q:"What is seed sovereignty?", opts:["Owning land", "Farmers' rights to save, use and share traditional seeds 🌾", "Buying all seeds", "Selling crops abroad"], ans:1, fact:"Seed sovereignty protects farmers from dependence on expensive commercial seed companies!", img:"🌾🤲✅🌍"},
+        {q:"What is agroecology?", opts:["A science degree", "Applying ecological principles to sustainable food systems 🌿", "Chemical farming", "Urban gardening"], ans:1, fact:"Agroecology uses biodiversity, natural processes and local knowledge for sustainable food!", img:"🌿🔬🌾♻️"},
+        {q:"What is climate-smart agriculture?", opts:["Hot weather farming", "Farming that adapts to climate change while reducing emissions 🌡️", "Air-conditioned farms", "Only drought crops"], ans:1, fact:"Climate-smart agriculture builds resilience, reduces emissions and maintains food security!", img:"🌡️🌾✅♻️"},
+      ],
+      j2: [
+        {q:"What is food waste's environmental impact?", opts:["No impact", "Produces greenhouse gases equivalent to 8% of global emissions 💨", "Only uses landfill space", "Creates compost"], ans:1, fact:"Rotting food produces methane — a powerful greenhouse gas — in landfills worldwide!", img:"💨🗑️🌍😟"},
+        {q:"What is hydroponics?", opts:["Water sports farming", "Growing plants in nutrient-rich water without soil 💧", "Underwater food", "Rain-fed farming"], ans:1, fact:"Hydroponics uses 90% less water than soil farming and can grow food anywhere!", img:"💧🌿🏙️✅"},
+        {q:"What is food justice?", opts:["Cheap food for all", "Fair access to healthy food regardless of income or location ⚖️", "Free meals everywhere", "Justice system food"], ans:1, fact:"Food justice addresses why poor communities have less access to nutritious food!", img:"⚖️🍎🌍✅"},
+        {q:"What are mycotoxins?", opts:["Good bacteria", "Toxic compounds from moulds on poorly stored grain ⚠️", "Food flavourings", "Soil bacteria"], ans:1, fact:"Mycotoxins from fungi on stored grains cause illness — proper storage prevents them!", img:"⚠️🌾🍄❌"},
+        {q:"What is regenerative agriculture?", opts:["Restoring degraded land", "Farming that actively improves soil, water and biodiversity 🌱", "Only organic farming", "Traditional methods only"], ans:1, fact:"Regenerative agriculture rebuilds soil health, sequesters carbon and restores ecosystems!", img:"🌱🪱🌾✅"},
+        {q:"What is the role of women in food systems?", opts:["Minor role", "Women produce 60-80% of food in developing countries 👩‍🌾", "Equal role everywhere", "Only cooking at home"], ans:1, fact:"Women are central to food production but often lack land rights and resources!", img:"👩‍🌾🌾🌍💪"},
+        {q:"What is biodiversity loss's effect on food?", opts:["More food variety", "Fewer crop varieties making food systems fragile and vulnerable ⚠️", "Better quality food", "No effect on food"], ans:1, fact:"Losing crop diversity means one disease could wipe out a staple food worldwide!", img:"⚠️🌾❌🌍"},
+        {q:"What is the role of international trade in food?", opts:["Reduces food security", "Allows countries to import food they cannot produce domestically 🚢", "Creates dependence only", "No significant role"], ans:1, fact:"Trade enables food access but can create dangerous dependency on global supply chains!", img:"🚢🌾🌍⚖️"},
+        {q:"What is food systems transformation?", opts:["New cooking styles", "Fundamentally changing how food is produced distributed and consumed 🌍", "New packaging", "Better refrigeration"], ans:1, fact:"Transforming food systems means addressing environment, health, equity and economy together!", img:"🌍🔄🌾✅"},
+        {q:"What is land tenure and food security?", opts:["Land ownership only", "Secure land rights allow farmers to invest in long-term production 🏡", "Renting farms", "Land measurement"], ans:1, fact:"When farmers have secure land rights they invest in better farming practices!", img:"🏡🌾✅📜"},
+      ],
+      j3: [
+        {q:"What is a dietary transition?", opts:["Changing diet temporarily", "Shift from traditional to processed foods as economies develop 🍔", "Seasonal eating", "Crop rotation"], ans:1, fact:"As countries develop, diets often shift to more meat, sugar and processed foods!", img:"🍔📈🌍😟"},
+        {q:"What is nutritional epidemiology?", opts:["Food history", "Study of how diet relates to disease patterns in populations 📊", "Epidemic diseases only", "Nutrition for athletes"], ans:1, fact:"Nutritional epidemiology links dietary patterns to health outcomes across populations!", img:"📊🔬🍎💚"},
+        {q:"What is the triple burden of malnutrition?", opts:["Three vitamins", "Undernutrition, overnutrition and micronutrient deficiency coexisting 📊", "Three meal times", "Hunger only"], ans:1, fact:"The triple burden means populations face hunger, obesity and vitamin deficiency simultaneously!", img:"📊🌍😟"},
+        {q:"What is supply chain resilience for food?", opts:["Strong packaging", "Food systems' ability to maintain supply despite shocks 🔄", "Fast delivery only", "Local markets only"], ans:1, fact:"COVID-19 exposed food supply chain fragility — resilience requires diversification!", img:"🔄🌍⚠️✅"},
+        {q:"What is agroforestry's climate benefit?", opts:["More shade only", "Trees store carbon, regulate water and protect soil simultaneously 🌳", "Reducing farmland", "Cooling only"], ans:1, fact:"Agroforestry systems sequester significant carbon while maintaining food production!", img:"🌳💚🌾♻️"},
+        {q:"What is food systems governance?", opts:["Farm management only", "Rules and policies shaping how food systems operate 📋", "International aid", "UN food programs"], ans:1, fact:"Good food governance coordinates policies across agriculture, trade, health and environment!", img:"📋🌍🤝✅"},
+        {q:"What is traditional knowledge's role in food?", opts:["Outdated information", "Centuries of wisdom about crops, ecosystems and nutrition 🌿", "Only for history", "Superstition only"], ans:1, fact:"Traditional ecological knowledge guides sustainable farming and conserves biodiversity!", img:"🌿👴🌾✅"},
+        {q:"What is the food-energy-water nexus?", opts:["Three separate issues", "Interconnected relationship between food, energy and water 🔄", "Three SDGs", "Climate impacts only"], ans:1, fact:"Food production needs water and energy; energy needs water; all are deeply interconnected!", img:"🔄💧⚡🌾"},
+        {q:"What is food systems research?", opts:["Cooking experiments", "Scientific study of all aspects of food from farm to fork 🔬", "Agricultural research only", "Marketing research"], ans:1, fact:"Food systems research spans agronomy, nutrition, economics, ecology and social science!", img:"🔬🌾📊🌍"},
+        {q:"What is the political economy of food?", opts:["Food politics only", "How power, economics and politics shape food systems and who benefits ⚖️", "Economic food theory", "Market analysis"], ans:1, fact:"Power asymmetries between corporations, governments and farmers shape food outcomes!", img:"⚖️🌍💰🌾"},
+      ],
+      s1: [
+        {q:"What is dietary greenhouse gas emissions?", opts:["Plant breathing", "CO₂ and methane produced across the food system 💨", "Kitchen cooking emissions", "Farm machinery only"], ans:1, fact:"Food systems cause 26% of global greenhouse gas emissions — diet choices matter!", img:"💨🌾🐄📊"},
+        {q:"What is the Malthusian theory about food?", opts:["About disease only", "Population grows faster than food supply creating famine risk 📊", "Economic theory", "Climate theory"], ans:1, fact:"Malthus predicted population would outstrip food supply — technology has delayed this!", img:"📊🌍🌾⚠️"},
+        {q:"What is land use change for food?", opts:["Farm ownership", "Converting forests to farmland releasing carbon and losing biodiversity 🌳❌", "Land reform", "Urban growth"], ans:1, fact:"Agriculture drives 80% of global deforestation — the biggest driver of habitat loss!", img:"🌳❌🌾💨"},
+        {q:"What is food price volatility?", opts:["Price labels changing", "Rapid unpredictable changes in food prices harming poor consumers 📈", "Annual price changes", "Market competition"], ans:1, fact:"Oil price spikes, droughts and speculation cause food price crises harming billions!", img:"📈🌾😟🌍"},
+        {q:"What is agricultural subsidies' role?", opts:["Paying farmers anything", "Government payments supporting farming but distorting global trade 💰", "Free food programs", "Charity"], ans:1, fact:"Rich countries' farm subsidies can undercut farmers in developing countries unfairly!", img:"💰🌾🌍⚖️"},
+        {q:"What is nutritional transition theory?", opts:["Diet changes in athletes", "How diets shift as countries industrialise toward processed foods 📊", "Seasonal diet changes", "Cultural changes"], ans:1, fact:"As incomes rise diets shift to more meat, fat and sugar — increasing chronic disease!", img:"📊🍔🌍😟"},
+        {q:"What is blue food?", opts:["Blue-coloured food only", "Seafood and freshwater species with lower environmental impact 🐟", "Blueberries only", "Ocean farming"], ans:1, fact:"Blue foods from oceans and freshwater have diverse nutrition and varied environmental impact!", img:"🐟🌊💙🌍"},
+        {q:"What is agricultural productivity gap?", opts:["Farm size difference", "Difference between actual and achievable smallholder yields 📊", "Profit difference", "Knowledge gap"], ans:1, fact:"Many smallholder farmers achieve only 20-50% of potential yields due to resource limits!", img:"📊🌾🌍⬆️"},
+        {q:"What is food system equity?", opts:["Equal food portions", "Fair distribution of benefits across the food system ⚖️", "Same food for all", "Equal farm sizes"], ans:1, fact:"Equity in food systems means addressing race, gender, income and geography in food access!", img:"⚖️🌍🍽️✅"},
+        {q:"What is food inflation?", opts:["More food available", "Rising food prices reducing purchasing power of consumers 📈", "Better food quality", "New food products"], ans:1, fact:"Food inflation disproportionately affects poor families who spend most income on food!", img:"📈🍽️😟💰"},
+      ],
+      s2: [
+        {q:"What is the food-energy-water nexus challenge?", opts:["Three simple issues", "Interconnected systems where producing food needs energy and water 🔄", "Three SDGs", "Climate impacts"], ans:1, fact:"Food production needs water and energy; energy production needs water; all are linked!", img:"🔄💧⚡🌾"},
+        {q:"What is food system transformation challenge?", opts:["Changing recipes", "Producing healthy food for all within planetary boundaries 🌍", "Farm modernisation", "New food technology"], ans:1, fact:"We need to feed 10 billion people by 2050 while staying within Earth's environmental limits!", img:"🌍📊🌾⚖️"},
+        {q:"What is food system innovation?", opts:["New recipes only", "New technologies and institutions improving how food systems work 💡", "Farm equipment", "Packaging only"], ans:1, fact:"Innovation in food spans cellular agriculture, digital farming and food waste reduction!", img:"💡🧬🌾🔬"},
+        {q:"What are evidence-based dietary guidelines?", opts:["Personal preferences", "Evidence-based recommendations for healthy eating patterns 📋", "Strict diet rules", "Government food orders"], ans:1, fact:"Dietary guidelines translate nutrition science into practical food choice recommendations!", img:"📋🍎🔬✅"},
+        {q:"What is food systems modelling?", opts:["Food computer games", "Using mathematical models to analyse food system outcomes 💻", "Farm planning software", "Nutritional calculation"], ans:1, fact:"Computational models help policymakers understand complex food system interventions!", img:"💻📊🌾🔬"},
+        {q:"What is ecosystem services valuation for food?", opts:["Farm profit only", "Assigning economic value to nature's contributions to food production 🌿💰", "Land pricing", "Food market value"], ans:1, fact:"Pollination, water filtration and soil formation have economic value often ignored in farming!", img:"🌿💰🐝✅"},
+        {q:"What is the role of cities in food systems?", opts:["Only consumption", "Cities are increasingly important food producers and policy innovators 🏙️", "No role in production", "Only markets"], ans:1, fact:"Urban agriculture, food policy councils and city-region food systems shape future food!", img:"🏙️🌿🌾✅"},
+        {q:"What is food systems complexity?", opts:["Complicated cooking", "Interconnected adaptive food systems requiring systems thinking 🔄", "Farm complexity", "Supply chain length"], ans:1, fact:"Food systems are complex adaptive systems — interventions can have unintended consequences!", img:"🔄🌾🔬🌍"},
+        {q:"What is the social cost of carbon in food?", opts:["Carbon in soil", "Economic damage from CO₂ emissions affecting food system costs 💰", "Farm profit", "Food price inflation"], ans:1, fact:"Carbon pricing accounts for climate damages affecting food production costs globally!", img:"💰💨🌾📊"},
+        {q:"What is global food governance gap?", opts:["Missing food labels", "Lack of institutions to coordinate global food system challenges 🌍", "Food regulation failure", "Trade law gap"], ans:1, fact:"No single global body coordinates food, climate, trade and nutrition policy together!", img:"🌍📋⚠️🤝"},
+      ],
+      s3: [
+        {q:"What is planetary health diet?", opts:["Eating all planets' food", "Diet healthy for humans and sustainable for the planet 🌍🥗", "Astronaut food", "Space exploration diet"], ans:1, fact:"The EAT-Lancet Commission defined a diet good for both human and planetary health!", img:"🌍🥗💚🔬"},
+        {q:"What is food system decarbonisation?", opts:["Carbon in food", "Reducing greenhouse gas emissions across the entire food system 💨", "Food packaging change", "Electric cooking"], ans:1, fact:"Decarbonising food requires changing diets, farming practices and reducing food waste!", img:"💨🌾🔄✅"},
+        {q:"What is agroecological transition?", opts:["Slow farming", "Shift from industrial to ecologically sustainable agriculture 🌿", "Growing different crops", "Technology adoption"], ans:1, fact:"Agroecological transition requires policy support, knowledge systems and market changes!", img:"🌿🔄🌾✅"},
+        {q:"What is food sovereignty versus food security?", opts:["Same concept", "Security is enough food; sovereignty is right to control your food system 🌾", "International law", "Trade policy only"], ans:1, fact:"Food sovereignty goes beyond security to include rights, power and self-determination!", img:"🌾⚖️🌍🤲"},
+        {q:"What is cellular agriculture?", opts:["Farming in cells", "Growing meat and animal products from cells in labs 🧬", "Cell phone farming", "Microscopic crops"], ans:1, fact:"Lab-grown meat could radically reduce land, water and emissions from animal agriculture!", img:"🧬🥩💡🌍"},
+        {q:"What is food as medicine?", opts:["Prescribing food pills", "Using diet and nutrition as tools for disease prevention 🥗", "Hospital food", "Traditional healing only"], ans:1, fact:"Evidence-based dietary interventions can prevent and treat many chronic diseases!", img:"🥗💊🔬✅"},
+        {q:"What is the future of food?", opts:["Same as today", "Diverse innovations in production, consumption and systems design 🔬", "Only technology", "Only traditional farming"], ans:1, fact:"Future food integrates precision agriculture, alternative proteins, reduced waste and equity!", img:"🔬🌾🌍✅"},
+        {q:"What is nutritional epidemiology's policy role?", opts:["Cooking advice", "Providing evidence for food policies addressing population health 📊", "Epidemic diseases", "Athlete nutrition"], ans:1, fact:"Nutritional epidemiology evidence shapes food labels, dietary guidelines and public health policy!", img:"📊🔬🍎💚"},
+        {q:"What is agroforestry's role in carbon sequestration?", opts:["Trees are pretty", "Trees in farm systems absorb and store significant atmospheric carbon 🌳", "Cooling effect", "Making more shade"], ans:1, fact:"Agroforestry can sequester 0.3-9.5 tonnes of carbon per hectare per year — vital for climate!", img:"🌳💚♻️📊"},
+        {q:"What is food systems resilience in a climate crisis?", opts:["Strong packaging", "Food systems' capacity to withstand and adapt to climate shocks 🔄", "Only local farms", "Stockpiling food"], ans:1, fact:"Resilient food systems diversify crops, use regenerative practices and strengthen local supply!", img:"🔄🌾🌡️✅"},
+      ],
+  },
+  energy: {
+      n1: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      n2: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      p1: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      p2: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      p3: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      p4: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      p5: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      p6: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      j1: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      j2: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      j3: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      s1: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      s2: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+      s3: [
+        {q:"Where does electricity come from to light our homes?", opts:["The ground", "The sun and power stations ⚡", "The rain", "The wind only"], ans:1, fact:"Electricity comes from power stations and increasingly from solar panels!", img:"⚡🏠💡"},
+        {q:"What does the sun give us?", opts:["Ice cream", "Light and heat ☀️", "Rain", "Darkness"], ans:1, fact:"The sun gives us light to see and heat to keep warm every day!", img:"☀️🌟💛"},
+        {q:"How do we save electricity at home?", opts:["Leave all lights on", "Turn off lights when leaving a room 💡", "Use more machines", "Open the fridge often"], ans:1, fact:"Switching off lights saves electricity and helps the environment!", img:"💡✅🌿"},
+        {q:"What is a battery?", opts:["A type of food", "Something that stores energy 🔋", "A type of toy", "A type of plant"], ans:1, fact:"Batteries store energy so we can use it later — like in our toys and phones!", img:"🔋⚡✨"},
+        {q:"What is wind energy?", opts:["Energy from eating", "Energy made from the wind blowing 💨", "Energy from rain", "Energy from fire"], ans:1, fact:"Wind turbines use the wind to make clean electricity — no pollution!", img:"💨⚡🌿"},
+      ],
+  },
+  water: {
+      n1: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      n2: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      p1: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      p2: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      p3: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      p4: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      p5: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      p6: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      j1: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      j2: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      j3: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      s1: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      s2: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+      s3: [
+        {q:"What do we use water for?", opts:["Only swimming", "Drinking, cooking and cleaning 💧", "Only making ice", "Only washing cars"], ans:1, fact:"Water is essential for drinking, cooking, washing and growing our food!", img:"💧🍳🚿"},
+        {q:"Where does rain come from?", opts:["From shops", "From clouds in the sky 🌧️", "From the ground", "From factories"], ans:1, fact:"Clouds collect water vapour that falls as rain — part of the water cycle!", img:"🌧️☁️🌊"},
+        {q:"What colour is clean water?", opts:["Yellow", "Brown", "Red", "Clear and colourless 💧"], ans:3, fact:"Clean safe drinking water is clear with no colour, smell or taste!", img:"💧✅💎"},
+        {q:"Why do plants need water?", opts:["To make noise", "To grow and make food 🌱", "To become an animal", "To fly"], ans:1, fact:"Water carries nutrients to all parts of the plant so it can grow!", img:"🌱💧☀️"},
+        {q:"What is a river?", opts:["A type of road", "A large body of fresh water flowing to the sea 🌊", "A type of lake", "An underground cave"], ans:1, fact:"Rivers flow from mountains and hills carrying fresh water to the sea!", img:"🌊🏔️🐠"},
+      ],
+  },
+  nature: {
+      n1: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      n2: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      p1: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      p2: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      p3: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      p4: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      p5: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      p6: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      j1: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      j2: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      j3: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      s1: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      s2: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+      s3: [
+        {q:"What do trees give us to breathe?", opts:["Carbon dioxide", "Oxygen 🌳", "Smoke", "Steam"], ans:1, fact:"Trees breathe in CO₂ and breathe out the oxygen we need to live!", img:"🌳💨🟢"},
+        {q:"What is a leaf?", opts:["Part of a fish", "The flat green part of a plant 🍃", "A type of rock", "A type of cloud"], ans:1, fact:"Leaves are the food factories of plants — they capture sunlight for photosynthesis!", img:"🍃🌿☀️"},
+        {q:"Where do butterflies come from?", opts:["From eggs", "From caterpillars that transform 🦋", "From flowers", "From trees directly"], ans:1, fact:"Caterpillars spin a chrysalis and transform into beautiful butterflies!", img:"🦋🐛🌸"},
+        {q:"What is a seed?", opts:["A type of rock", "A tiny thing that grows into a plant 🫘", "A type of water", "A part of a fish"], ans:1, fact:"Every plant starts as a tiny seed — just add water, soil and sunlight!", img:"🫘🌱🌿"},
+        {q:"What do birds eat in the garden?", opts:["Rocks", "Insects, seeds and worms 🐦", "Plastic", "Soil only"], ans:1, fact:"Birds help our gardens by eating pest insects and spreading seeds!", img:"🐦🐛🌾"},
+      ],
+  },
+  climate: {
+      n1: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      n2: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      p1: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      p2: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      p3: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      p4: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      p5: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      p6: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      j1: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      j2: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      j3: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      s1: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      s2: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+      s3: [
+        {q:"What is the weather?", opts:["What we eat", "What is happening in the sky — sunny, rainy or windy 🌤️", "What we wear", "What we learn"], ans:1, fact:"Weather is what happens outside — sunshine, rain, wind or clouds every day!", img:"🌤️☀️🌧️"},
+        {q:"Why is it important to keep Earth clean?", opts:["It looks nice", "Plants, animals and people need a clean environment to stay healthy 🌍", "Only for tourists", "Only for animals"], ans:1, fact:"A clean Earth supports all life — animals, plants and humans all depend on it!", img:"🌍🌿✅"},
+        {q:"What colour is the sky on a sunny day?", opts:["Green", "Yellow", "Blue ☀️", "Orange"], ans:2, fact:"The sky appears blue because of how sunlight scatters through the atmosphere!", img:"☀️💙🌤️"},
+        {q:"What is a forest?", opts:["A big building", "A large area with many trees 🌲", "A type of ocean", "A type of city"], ans:1, fact:"Forests are home to millions of species and help clean our air and water!", img:"🌲🌳🌿"},
+        {q:"Why should we plant trees?", opts:["They are pretty", "Trees clean the air and provide homes for animals 🌳", "To block the view", "To make shade only"], ans:1, fact:"Trees absorb CO₂, release oxygen, provide habitat and reduce flooding!", img:"🌳💚🌍"},
+      ],
+  },
+  science: {
+      n1: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      n2: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      p1: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      p2: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      p3: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      p4: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      p5: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      p6: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      j1: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      j2: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      j3: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      s1: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      s2: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+      s3: [
+        {q:"What is a microscope used for?", opts:["Eating food", "Looking at very tiny things 🔬", "Building houses", "Measuring temperature"], ans:1, fact:"Microscopes magnify tiny objects like bacteria and cells so we can study them!", img:"🔬✨🧫"},
+        {q:"What is a farmer's most important tool?", opts:["A computer", "Knowledge and good farming tools 🚜", "A television", "A car"], ans:1, fact:"Farmers use knowledge, seeds, soil, water and tools to grow our food!", img:"🚜🌾👨‍🌾"},
+        {q:"What does a GPS do on a farm?", opts:["Cooks food", "Tells the farmer exactly where they are on the field 🛰️", "Waters plants", "Predicts weather only"], ans:1, fact:"GPS satellites help farmers know exactly where to plant, water and harvest!", img:"🛰️📍🌾"},
+        {q:"What is a drone used for on farms?", opts:["It is a toy only", "It flies over fields to check crop health 🛸", "It waters crops by hand", "It harvests crops manually"], ans:1, fact:"Farm drones photograph and survey crops — spotting problems early!", img:"🛸📷🌾"},
+        {q:"What is a soil sensor?", opts:["A type of worm", "A device that measures moisture and nutrients in soil 📡", "A garden tool", "A type of seed"], ans:1, fact:"Soil sensors send real-time data to farmers — helping them water only when needed!", img:"📡🌱💧"},
+      ],
+  },
+  animals: {
+      n1: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      n2: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      p1: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      p2: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      p3: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      p4: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      p5: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      p6: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      j1: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      j2: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      j3: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      s1: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      s2: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+      s3: [
+        {q:"Which animal helps farmers by eating pests?", opts:["Lion 🦁", "Ladybird 🐞", "Elephant 🐘", "Shark 🦈"], ans:1, fact:"Ladybirds eat aphids — tiny pests that damage crops — protecting the farm!", img:"🐞🌿✅"},
+        {q:"What does a bee do for flowers?", opts:["It eats flowers", "It carries pollen between flowers helping them make fruit 🐝", "It digs in soil", "It eats other insects"], ans:1, fact:"Bees are the most important pollinators — without them we would have less food!", img:"🐝🌸🍎"},
+        {q:"What do earthworms do for soil?", opts:["They eat plants", "They dig tunnels helping water and air enter the soil 🪱", "They make soil hard", "They eat other worms"], ans:1, fact:"Earthworms are nature's ploughs — their tunnels let roots grow and water drain!", img:"🪱🌱💚"},
+        {q:"Which animal makes honey?", opts:["Ant 🐜", "Bee 🐝", "Butterfly 🦋", "Spider 🕷️"], ans:1, fact:"Bees collect nectar from flowers and transform it into delicious nutritious honey!", img:"🐝🍯🌸"},
+        {q:"What is an animal's habitat?", opts:["Its food only", "The natural place where it lives and finds food and shelter 🌳", "Its family only", "Its colour"], ans:1, fact:"Every animal has a natural habitat it is perfectly adapted to live in!", img:"🌳🦁🌿"},
+      ],
+  },
+  soil: {
+      n1: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      n2: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      p1: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      p2: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      p3: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      p4: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      p5: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      p6: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      j1: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      j2: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      j3: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      s1: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      s2: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+      s3: [
+        {q:"What colour is healthy fertile soil?", opts:["Bright yellow", "Very pale grey", "Dark brown or black 🟤", "Bright white"], ans:2, fact:"Dark soil is full of organic matter and nutrients — perfect for growing food!", img:"🟤🌱✅"},
+        {q:"What lives in healthy soil?", opts:["Nothing at all", "Worms, bacteria and many tiny creatures 🪱", "Only rocks", "Only sand"], ans:1, fact:"Healthy soil is teeming with life — billions of microbes and earthworms!", img:"🪱🌱🔬"},
+        {q:"What is compost made from?", opts:["Plastic and metal", "Food scraps and plant material that has decomposed 🌿", "Sand and rocks", "Chemical powder"], ans:1, fact:"Compost is made from organic waste — it enriches soil and helps plants grow!", img:"🌿🍂🪱"},
+        {q:"Why is soil important?", opts:["It looks nice", "Plants grow in soil which gives us all our food 🌱", "Only for making bricks", "Only for roads"], ans:1, fact:"Soil is the foundation of all food production — without soil we cannot eat!", img:"🌱🌾🌍"},
+        {q:"What damages soil?", opts:["Rain", "Cutting all trees and over-farming 🏜️", "Growing vegetables", "Compost"], ans:1, fact:"Deforestation and overfarming destroy soil — it takes 500 years to form 1cm of topsoil!", img:"🏜️❌🌾😟"},
+      ],
+  },
+  french: {
+      n1: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      n2: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      p1: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      p2: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      p3: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      p4: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      p5: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      p6: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      j1: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      j2: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      j3: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      s1: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      s2: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+      s3: [
+        {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is an apple in French — la pomme est rouge et delicieuse!", img:"🍎🇫🇷✨"},
+        {q:"Comment dit-on 'water' en français?", opts:["Le feu", "L'air", "L'eau 💧", "La terre"], ans:2, fact:"L'eau is water in French — nous avons besoin d'eau pour vivre!", img:"💧🇫🇷🌊"},
+        {q:"Comment dit-on 'tree' en français?", opts:["Une fleur 🌸", "Un arbre 🌳", "Une feuille 🍃", "Une graine 🫘"], ans:1, fact:"Un arbre is a tree in French — les arbres produisent de l'oxygène!", img:"🌳🇫🇷💚"},
+        {q:"Comment dit-on 'sun' en français?", opts:["La lune 🌙", "La pluie 🌧️", "Le soleil ☀️", "Le vent 💨"], ans:2, fact:"Le soleil is the sun in French — le soleil nous donne de la chaleur!", img:"☀️🇫🇷💛"},
+        {q:"Comment dit-on 'flower' en français?", opts:["La feuille 🍃", "La fleur 🌸", "La graine 🫘", "La racine 🌿"], ans:1, fact:"Une fleur is a flower in French — les fleurs sont belles et colorées!", img:"🌸🇫🇷🌺"},
+      ],
+  },
+  weather: {
+      n1: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      n2: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      p1: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      p2: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      p3: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      p4: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      p5: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      p6: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      j1: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      j2: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      j3: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      s1: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      s2: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+      s3: [
+        {q:"What do we call water falling from the sky?", opts:["Snow only", "Rain 🌧️", "Hail only", "Fog only"], ans:1, fact:"Rain is water droplets that fall from clouds when they get too heavy!", img:"🌧️☁️💧"},
+        {q:"What season comes after winter?", opts:["Autumn 🍂", "Summer ☀️", "Spring 🌸", "Rainy season"], ans:2, fact:"Spring comes after winter — flowers bloom and baby animals are born!", img:"🌸🌱🌤️"},
+        {q:"What does a rainbow look like?", opts:["Black and white", "Many colours in an arc shape 🌈", "Only red", "Only blue"], ans:1, fact:"Rainbows form when sunlight shines through water droplets — 7 colours!", img:"🌈☀️🌧️"},
+        {q:"What is wind?", opts:["Falling rain", "Moving air 💨", "Hot sunshine", "Cold ice"], ans:1, fact:"Wind is air moving from high pressure to low pressure areas — it can be gentle or strong!", img:"💨🌿🍃"},
+        {q:"Why is the sun important for weather?", opts:["It is not important", "It heats the Earth creating all weather patterns ☀️", "Only for seeing", "Only for plants"], ans:1, fact:"The sun's heat drives all weather — it evaporates water and creates wind!", img:"☀️🌡️🌍"},
+      ],
+  },
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length-1; i > 0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]]
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
 
-// ─── MATCH GAME SUB-COMPONENT ─────────────────────────────────
-function MatchGame({ q, onCorrect, onWrong }: { q:Question, onCorrect:()=>void, onWrong:()=>void }) {
-  const [matched, setMatched] = useState<string[]>([])
-  const [selLeft, setSelLeft] = useState<string|null>(null)
-  const [wrongPair, setWrongPair] = useState<string[]>([])
-  const [done, setDone] = useState(false)
-
-  const shuffledPairs = useState(() => shuffle(q.pairs!))[0]
-  const rights = useState(() => shuffle(q.pairs!.map(p=>p[1])))[0]
-
-  const pickLeft = (val: string) => {
-    if (done || matched.includes(val)) return
-    setSelLeft(v => v===val ? null : val)
-  }
-
-  const pickRight = (val: string) => {
-    if (!selLeft || done) return
-    const correct = q.pairs!.find(p=>p[0]===selLeft)
-    if (correct && correct[1]===val) {
-      const newMatched = [...matched, selLeft]
-      setMatched(newMatched)
-      setSelLeft(null)
-      if (newMatched.length === q.pairs!.length) {
-        setDone(true)
-        onCorrect()
-      }
-    } else {
-      setWrongPair([selLeft, val])
-      setTimeout(() => { setWrongPair([]); setSelLeft(null) }, 700)
-      onWrong()
-    }
-  }
-
-  const leftKey = (v:string) => matched.includes(v) ? 'matched' : selLeft===v ? 'selL' : wrongPair[0]===v ? 'wrong' : 'idle'
-  const rightKey = (v:string) => {
-    const left = q.pairs!.find(p=>p[1]===v)?.[0]||''
-    return matched.includes(left) ? 'matched' : wrongPair[1]===v ? 'wrong' : 'idle'
-  }
-
-  const itemStyle = (state: string): React.CSSProperties => {
-    const base: React.CSSProperties = { padding:'10px 12px', borderRadius:12, textAlign:'center', cursor:'pointer', transition:'all .2s', fontSize:'0.88rem', fontWeight:700, marginBottom:6 }
-    if (state==='matched') return {...base, background:'#0a2a0a', border:'2px solid #2d8a2d', color:'#7ddb7d', cursor:'default'}
-    if (state==='selL') return {...base, background:'#1a0d2e', border:'2px solid #c87af0', color:'#c87af0'}
-    if (state==='wrong') return {...base, background:'#2a0a0a', border:'2px solid #f47272', color:'#f47272', animation:'shk .4s ease'}
-    return {...base, background:'#0a1e2e', border:'2px solid #1e3a5a', color:'#c8dff0'}
-  }
-
-  return (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:16 }}>
-      <div>
-        <div style={{ fontSize:'0.7rem', color:'#8db4cc', fontWeight:800, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom:8, textAlign:'center' }}>Match from here 👇</div>
-        {shuffledPairs.map(([l]) => (
-          <div key={l} style={itemStyle(leftKey(l))} onClick={() => pickLeft(l)}>{l}</div>
-        ))}
-      </div>
-      <div>
-        <div style={{ fontSize:'0.7rem', color:'#8db4cc', fontWeight:800, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom:8, textAlign:'center' }}>To the correct answer</div>
-        {rights.map(r => (
-          <div key={r} style={itemStyle(rightKey(r))} onClick={() => pickRight(r)}>{r}</div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── DRAG-SORT SUB-COMPONENT ─────────────────────────────────
-function DragGame({ q, onResult }: { q: Question, onResult:(correct:boolean)=>void }) {
-  const [chips] = useState(() => shuffle(q.items!.map((text,i)=>({text,origIdx:i}))))
-  const [slots, setSlots] = useState<(number|null)[]>(new Array(q.items!.length).fill(null))
-  const [selChip, setSelChip] = useState<number|null>(null)
-  const [checked, setChecked] = useState(false)
-  const [results, setResults] = useState<(boolean|null)[]>(new Array(q.items!.length).fill(null))
-
-  const placed = slots.filter(Boolean).length + slots.filter(s=>s===0).length
-
-  const pickChip = (i:number) => {
-    if (checked) return
-    setSelChip(v => v===i ? null : i)
-  }
-
-  const fillSlot = (si:number) => {
-    if (selChip===null || checked) return
-    const newSlots = [...slots]
-    // if slot already filled, return chip
-    if (newSlots[si] !== null) {
-      const old = newSlots[si]!
-      if (old !== selChip) setSelChip(null)
-    }
-    newSlots[si] = selChip
-    setSlots(newSlots)
-    setSelChip(null)
-  }
-
-  const check = () => {
-    if (slots.includes(null)) return
-    const res = slots.map((chipIdx, si) => {
-      if (chipIdx===null) return null
-      return chips[chipIdx].origIdx === q.correct![si]
-    })
-    setResults(res)
-    setChecked(true)
-    onResult(res.every(r=>r===true))
-  }
-
-  const usedChips = new Set(slots.filter(s=>s!==null) as number[])
-
-  return (
-    <div style={{ marginBottom:16 }}>
-      <div style={{ fontSize:'0.75rem', color:'#8db4cc', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:8 }}>
-        Tap a card, then tap a slot to place it:
-      </div>
-      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-        {slots.map((chipIdx, si) => {
-          const res = results[si]
-          let bg='#0d2233', border='2px dashed #1e4d6b', color='#4a7a99', label=String(si+1)
-          if (chipIdx!==null) {
-            label = chips[chipIdx].text
-            bg = res===null ? '#1a2e42' : res ? '#0a2a0a' : '#2a0a0a'
-            border = res===null ? '2px solid #2d5a7a' : res ? '2px solid #7ddb7d' : '2px solid #f47272'
-            color = res===null ? '#c8dff0' : res ? '#7ddb7d' : '#f47272'
-          }
-          return (
-            <div key={si} onClick={() => fillSlot(si)} style={{
-              minWidth:110, padding:'10px 12px', borderRadius:10, textAlign:'center',
-              background:bg, border, color, fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
-              transition:'all .2s',
-            }}>{label}</div>
-          )
-        })}
-      </div>
-      <div style={{ display:'flex', flexWrap:'wrap', gap:8, padding:10, background:'#0a1e2e', border:'1.5px dashed #2d5a7a', borderRadius:12, marginBottom:10, minHeight:48 }}>
-        {chips.map((c,i) => {
-          const isUsed = usedChips.has(i)
-          const isSel = selChip===i
-          return (
-            <div key={i} onClick={() => !isUsed && pickChip(i)} style={{
-              padding:'9px 14px', background: isSel ? '#1a4a6a' : '#1a2e42',
-              border:`1.5px solid ${isSel ? '#5ab8f0' : '#2d5a7a'}`,
-              borderRadius:10, fontSize:'0.82rem', color: isUsed ? '#2a4a5a' : isSel ? '#5ab8f0' : '#c8dff0',
-              fontWeight:700, cursor: isUsed ? 'default' : 'pointer', opacity: isUsed ? 0.4 : 1,
-              transition:'all .2s',
-            }}>{c.text}</div>
-          )
-        })}
-      </div>
-      {!checked && (
-        <button onClick={check} disabled={slots.includes(null)} style={{
-          padding:'9px 20px', background: slots.includes(null) ? '#0d2233' : '#0a2a3d',
-          border:`1.5px solid ${slots.includes(null) ? '#1e3a5a' : '#2d5a7a'}`,
-          borderRadius:10, color: slots.includes(null) ? '#4a7a99' : '#5ab8f0',
-          fontSize:'0.85rem', fontWeight:700, cursor: slots.includes(null) ? 'not-allowed' : 'pointer',
-          fontFamily:'inherit',
-        }}>✅ Check My Order</button>
-      )}
-    </div>
-  )
-}
-
-// ─── MAIN PAGE ────────────────────────────────────────────────
 export default function SproutsPlayzone() {
-  const [screen, setScreen] = useState<'name'|'home'|'game'|'result'>('name')
+  const [screen, setScreen] = useState<'name'|'grade'|'cat'|'game'|'result'>('name')
   const [playerName, setPlayerName] = useState('')
   const [nameInput, setNameInput] = useState('')
-  const [diff, setDiff] = useState<Diff>('easy')
+  const [grade, setGrade] = useState<Grade|null>(null)
   const [cat, setCat] = useState<Cat|null>(null)
-  const [questions, setQuestions] = useState<Question[]>([])
+  const [questions, setQuestions] = useState<Q[]>([])
   const [idx, setIdx] = useState(0)
-  const [lives, setLives] = useState(3)
   const [pts, setPts] = useState(0)
   const [correct, setCorrect] = useState(0)
+  const [lives, setLives] = useState(3)
+  const [sel, setSel] = useState<number|null>(null)
   const [answered, setAnswered] = useState(false)
-  const [selOpt, setSelOpt] = useState<number|null>(null)
-  const [showFb, setShowFb] = useState(false)
-  const [fbCorrect, setFbCorrect] = useState(false)
-  const [showMilestone, setShowMilestone] = useState(false)
-  const [burst, setBurst] = useState<string|null>(null)
-  const [matchWrong, setMatchWrong] = useState(false)
+  const [burst, setBurst] = useState('')
 
   const q = questions[idx]
+  const gradeInfo = GRADES.find(g => g.id === grade)
+  const catInfo = CATS.find(c => c.id === cat)
   const total = questions.length
-  const pct = total > 0 ? (idx/total)*100 : 0
-
-
-  function handleNameSubmit() {
-    if (!nameInput.trim()) return
-    setPlayerName(nameInput.trim())
-    setScreen('home')
-  }
+  const pct = total > 0 ? (idx / total) * 100 : 0
+  const resultPct = total > 0 ? Math.round((correct / total) * 100) : 0
 
   function startGame() {
-    if (!cat) return
-    const pool = QB[cat][diff]
-    if (!pool?.length) { alert('Questions coming soon!'); return }
-    setQuestions(shuffle(pool).slice(0, Math.min(pool.length, 30)))
-    setIdx(0); setLives(3); setPts(0); setCorrect(0)
-    setAnswered(false); setSelOpt(null); setShowFb(false)
-    setShowMilestone(false); setBurst(null); setScreen('game')
+    if (!grade || !cat) return
+    const pool = QB[cat][grade]
+    if (!pool || pool.length === 0) { alert('Questions coming soon for this grade and topic!'); return }
+    setQuestions(shuffle(pool))
+    setIdx(0); setPts(0); setCorrect(0); setLives(3)
+    setSel(null); setAnswered(false); setBurst('')
+    setScreen('game')
   }
 
-  function handleOpt(i: number) {
-    if (answered || !q) return
-    setAnswered(true); setSelOpt(i)
-    const ok = i === q.ans!
-    setFbCorrect(ok); setShowFb(true)
-    if (ok) {
-      setPts(p => p + DIFF_PTS[diff])
-      setCorrect(c => c+1)
-      setBurst(diff==='hard' ? '🏆 Brilliant!' : diff==='medium' ? '⭐ Great!' : '🌟 Correct!')
-      setTimeout(() => setBurst(null), 2000)
+  function pick(i: number) {
+    if (answered) return
+    setSel(i)
+    setAnswered(true)
+    if (i === q.ans) {
+      setPts(p => p + 10)
+      setCorrect(c => c + 1)
+      setBurst(`🌟 Brilliant, ${playerName}!`)
+      setTimeout(() => setBurst(''), 2000)
     } else {
-      setLives(l => l-1)
-      if (lives-1 <= 0) setTimeout(() => setScreen('result'), 2000)
+      const nl = lives - 1
+      setLives(nl)
+      if (nl <= 0) setTimeout(() => setScreen('result'), 1500)
     }
   }
 
-  function handleMatchCorrect() {
-    setAnswered(true); setFbCorrect(true); setShowFb(true)
-    setPts(p => p + DIFF_PTS[diff]); setCorrect(c => c+1)
-    setBurst('🌟 All matched!'); setTimeout(() => setBurst(null), 2000)
+  function next() {
+    const nx = idx + 1
+    if (nx >= total) { setScreen('result'); return }
+    setIdx(nx); setSel(null); setAnswered(false)
   }
 
-  function handleMatchWrong() {
-    const newLives = lives - 1
-    setLives(newLives)
-    if (newLives <= 0) setTimeout(() => setScreen('result'), 2000)
-  }
-
-  function handleDragResult(ok: boolean) {
-    setAnswered(true); setFbCorrect(ok); setShowFb(true)
-    if (ok) {
-      setPts(p => p + DIFF_PTS[diff]); setCorrect(c => c+1)
-      setBurst('🌟 Perfect order!'); setTimeout(() => setBurst(null), 2000)
-    } else {
-      const newLives = lives - 1; setLives(newLives)
-      if (newLives <= 0) setTimeout(() => setScreen('result'), 2000)
-    }
-  }
-
-  function nextQ() {
-    const next = idx + 1
-    if (next >= total) { setScreen('result'); return }
-    if ((next === 10 || next === 20) && next > 0) setShowMilestone(true)
-    setIdx(next); setAnswered(false); setSelOpt(null); setShowFb(false)
-  }
-
-  const catInfo = CATS.find(c => c.id === cat)!
-
-  // ---- STYLES ----
-  const s = {
-    page: { minHeight:'100vh', background:'#0d1b2a', fontFamily:"'Nunito','Segoe UI',sans-serif" } as React.CSSProperties,
-    topbar: { background:'linear-gradient(90deg,#0a3d0a,#145214,#1a6b1a)', padding:'11px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'3px solid #2d8a2d', position:'sticky' as const, top:0, zIndex:50 } as React.CSSProperties,
-    shell: { maxWidth:920, margin:'0 auto', padding:'20px 14px' } as React.CSSProperties,
-  }
-
-  const diffCfg = {
-    easy:  { label:'🟢 Easy',   sub:'Read & Answer · 5 pts',             onBg:'#1a5a1a', border:'#7ddb7d', textCol:'#7ddb7d', offBg:'#0f2b0f', offBorder:'#2d6b2d', desc:'📖 Read a question, look at the options, and pick the correct answer. Perfect for warming up!' },
-    medium:{ label:'🟡 Medium', sub:'Match, Sort & Calculate · 10 pts',   onBg:'#4a2e00', border:'#f4a234', textCol:'#f4a234', offBg:'#2a1800', offBorder:'#7a5200', desc:'🧩 Play match games, solve calculations with working shown, and drag-sort sequencing puzzles!' },
-    hard:  { label:'🔴 Hard',   sub:'Story Challenges · 15 pts',          onBg:'#4a0f0f', border:'#f47272', textCol:'#f47272', offBg:'#2a0a0a', offBorder:'#8a1a1a', desc:'🎭 Read a story problem, think like a scientist or farmer, and apply real maths to solve it!' },
-  }
-
-  const resultPct = total > 0 ? Math.round((correct/total)*100) : 0
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+    * { box-sizing:border-box; margin:0; padding:0 }
+    body { background:#0a0a1a }
+    @keyframes qIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    @keyframes burst { 0%{opacity:0;transform:translate(-50%,-50%) scale(.3)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(.8)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+    .grade-card:hover { transform:translateY(-6px) scale(1.05)!important; cursor:pointer }
+    .cat-card:hover { transform:translateY(-8px) scale(1.04)!important; cursor:pointer }
+    .opt-btn:hover:not(:disabled) { transform:scale(1.03)!important; filter:brightness(1.15)!important }
+    .go-btn:hover:not(:disabled) { transform:translateY(-4px)!important; box-shadow:0 20px 40px rgba(11,232,129,.5)!important }
+    .name-inp:focus { border-color:#0be881!important; box-shadow:0 0 0 3px rgba(11,232,129,.2)!important }
+  `
 
   return (
-    <div style={s.page}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        @keyframes qIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes popIn{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-        @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
-        @keyframes bst{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.8)}}
-        .cat-card-hover:hover{transform:translateY(-6px) scale(1.04)!important;cursor:pointer}
-        .opt-btn:hover:not(:disabled){transform:scale(1.03)!important}
-        .go-hover:hover:not(:disabled){transform:translateY(-4px)!important;box-shadow:0 16px 36px rgba(29,107,29,.6)!important}
-        .next-hover:hover{transform:translateY(-3px)!important}
-        .diff-hover:hover{transform:translateY(-2px);cursor:pointer}
-      `}</style>
+    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#0a0a1a 0%,#0d1b2a 50%,#0a1a0d 100%)',fontFamily:"'Nunito',sans-serif"}}>
+      <style>{css}</style>
 
       {/* BURST */}
       {burst && (
-        <div style={{ position:'fixed', top:'50%', left:'50%', zIndex:9999, pointerEvents:'none',
-          fontFamily:"'Fredoka One',cursive", fontSize:'1.6rem', color:'#f4b234',
-          background:'linear-gradient(135deg,#1a3a0a,#2d6b2d)', border:'3px solid #7ddb7d',
-          padding:'16px 32px', borderRadius:20, textAlign:'center',
-          animation:'bst 2s ease forwards', whiteSpace:'nowrap' }}>
+        <div style={{position:'fixed',top:'50%',left:'50%',zIndex:9999,pointerEvents:'none',
+          fontFamily:"'Fredoka One',cursive",fontSize:'2rem',color:'#ffd32a',
+          background:'linear-gradient(135deg,#1a3a0a,#2d6b2d)',border:'3px solid #0be881',
+          padding:'16px 36px',borderRadius:24,textAlign:'center',
+          animation:'burst 2s ease forwards',whiteSpace:'nowrap'}}>
           {burst}
         </div>
       )}
 
-      {/* TOP BAR */}
-      <div style={s.topbar}>
-        <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'1.4rem', color:'#fff', letterSpacing:1 }}>
-          🌿 LIFEWS<span style={{ color:'#7ddb7d' }}>Connect</span> · PlayZone
+      {/* TOPBAR */}
+      <div style={{background:'linear-gradient(90deg,#0a2a14,#0d3d1a,#0a2a14)',padding:'10px 20px',
+        display:'flex',alignItems:'center',justifyContent:'space-between',
+        borderBottom:'2px solid #0be881',position:'sticky',top:0,zIndex:50}}>
+        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.35rem',color:'#fff',letterSpacing:1}}>
+          🌿 LIFEWS<span style={{color:'#0be881'}}>Connect</span> · PlayZone
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ display:'flex', gap:3 }}>
-            {[0,1,2].map(i => (
-              <span key={i} style={{ fontSize:'1.25rem', opacity: i<lives?1:0.2, transition:'all .3s' }}>❤️</span>
-            ))}
-          </div>
-          <div style={{ background:'rgba(255,255,255,.15)', border:'2px solid rgba(255,255,255,.3)', borderRadius:20, padding:'5px 14px', color:'#fff', fontWeight:900, fontSize:'0.95rem' }}>
-            ⭐ {pts}
-          </div>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          {playerName && <div style={{color:'#0be881',fontWeight:800,fontSize:'0.85rem'}}>👤 {playerName}</div>}
+          {screen === 'game' && (
+            <>
+              <div style={{display:'flex',gap:2}}>
+                {[0,1,2].map(i => <span key={i} style={{fontSize:'1.1rem',opacity:i<lives?1:.2}}>❤️</span>)}
+              </div>
+              <div style={{background:'rgba(255,255,255,.15)',border:'2px solid rgba(255,255,255,.3)',borderRadius:20,padding:'4px 12px',color:'#fff',fontWeight:900,fontSize:'0.9rem'}}>⭐ {pts}</div>
+            </>
+          )}
         </div>
       </div>
 
-      <div style={s.shell}>
-
+      <div style={{maxWidth:960,margin:'0 auto',padding:'20px 14px'}}>
 
         {/* ===== NAME SCREEN ===== */}
         {screen === 'name' && (
           <div style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'80vh'}}>
-            <div style={{background:'linear-gradient(135deg,#0d1e3a,#0a2a1a)',border:'2px solid #1e4d6b',borderRadius:28,padding:'40px 32px',maxWidth:500,width:'100%',textAlign:'center' as const}}>
-              <div style={{fontSize:'5rem',marginBottom:16}}>🌿</div>
-              <h1 style={{fontFamily:"'Fredoka One',cursive",fontSize:'2.2rem',color:'#fff',marginBottom:8}}>
-                Welcome to <span style={{color:'#7ddb7d'}}>Sprouts</span>!
+            <div style={{background:'linear-gradient(135deg,#0d1e3a,#0a2a1a)',border:'2.5px solid #0be881',borderRadius:28,padding:'44px 36px',maxWidth:520,width:'100%',textAlign:'center',animation:'qIn .5s ease'}}>
+              <div style={{fontSize:'5rem',marginBottom:16,filter:'drop-shadow(0 4px 16px rgba(11,232,129,.4))'}}>🌿</div>
+              <h1 style={{fontFamily:"'Fredoka One',cursive",fontSize:'2.4rem',color:'#fff',marginBottom:8,lineHeight:1.1}}>
+                Welcome to <span style={{color:'#0be881'}}>Sprouts</span> PlayZone!
               </h1>
-              <p style={{color:'#8db4cc',fontWeight:600,fontSize:'1rem',marginBottom:28,lineHeight:1.6}}>
-                Ages 6-10 · 10 topics · Up to 30 questions each!
+              <p style={{color:'#7db8cc',fontWeight:700,fontSize:'1rem',marginBottom:32,lineHeight:1.6}}>
+                🌍 Food · Energy · Water · Nature & more<br/>
+                Play, learn and earn points! 🏆
               </p>
-              <div style={{marginBottom:20,textAlign:'left' as const}}>
-                <label style={{display:'block',fontSize:'0.85rem',color:'#8db4cc',fontWeight:700,marginBottom:8}}>What is your name? 👤</label>
-                <input type="text" placeholder="Type your name here..." value={nameInput} onChange={e => setNameInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleNameSubmit()} maxLength={20} autoFocus style={{background:'#0a1e2e',border:'2px solid #1e3a5a',borderRadius:14,padding:'14px 18px',color:'#e8f4ff',fontSize:'1.1rem',fontWeight:700,fontFamily:'inherit',width:'100%',outline:'none'}} />
+              <div style={{marginBottom:20,textAlign:'left'}}>
+                <label style={{display:'block',fontSize:'0.82rem',color:'#7db8cc',fontWeight:800,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.6px'}}>
+                  What is your name? 👤
+                </label>
+                <input
+                  className="name-inp"
+                  type="text"
+                  placeholder="Type your name here..."
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && nameInput.trim() && (setPlayerName(nameInput.trim()), setScreen('grade'))}
+                  maxLength={20}
+                  autoFocus
+                  style={{background:'#0a1e2e',border:'2.5px solid #1e3a5a',borderRadius:14,padding:'14px 18px',color:'#e8f4ff',fontSize:'1.1rem',fontWeight:800,fontFamily:'inherit',width:'100%',outline:'none',transition:'border .2s'}}
+                />
               </div>
-              <button onClick={handleNameSubmit} disabled={!nameInput.trim()} style={{width:'100%',padding:18,border:'none',borderRadius:18,background:nameInput.trim()?'linear-gradient(135deg,#1a6b1a,#3daa3d)':'#1a2a1a',color:nameInput.trim()?'#fff':'#3a5a3a',fontFamily:"'Fredoka One',cursive",fontSize:'1.35rem',cursor:nameInput.trim()?'pointer':'not-allowed'}}>
-                {nameInput.trim() ? "🚀 Let's Play!" : 'Enter your name above ☝️'}
+              <button
+                className="go-btn"
+                onClick={() => { if (nameInput.trim()) { setPlayerName(nameInput.trim()); setScreen('grade') } }}
+                disabled={!nameInput.trim()}
+                style={{width:'100%',padding:18,border:'none',borderRadius:18,
+                  background:nameInput.trim()?'linear-gradient(135deg,#0be881,#05c46b)':'#1a2a1a',
+                  color:nameInput.trim()?'#000':'#3a5a3a',fontFamily:"'Fredoka One',cursive",
+                  fontSize:'1.4rem',cursor:nameInput.trim()?'pointer':'not-allowed',
+                  transition:'all .28s',boxShadow:nameInput.trim()?'0 8px 28px rgba(11,232,129,.4)':'none'}}>
+                🚀 Let's Play!
               </button>
+              <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:20,flexWrap:'wrap'}}>
+                {[['🎯','10 Topics'],['📚','Grade-based'],['🏆','10 pts each']].map(([e,t]) => (
+                  <div key={t} style={{background:'rgba(11,232,129,.08)',border:'1px solid rgba(11,232,129,.2)',borderRadius:12,padding:'7px 14px',color:'#7db8cc',fontSize:'0.78rem',fontWeight:800}}>{e} {t}</div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ========== HOME ========== */
-        {screen === 'home' && (
-          <div>
-            {/* HERO */}
-            <div style={{ background:'linear-gradient(135deg,#1a3a4a,#0d2233)', borderRadius:22, padding:'24px 28px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between', border:'2px solid #1e4d6b' }}>
-              <div>
-                <h1 style={{ fontFamily:"'Fredoka One',cursive", fontSize:'2.2rem', color:'#fff', lineHeight:1.1, marginBottom:6 }}>
-                  🌿 <span style={{ color:'#7ddb7d' }}>Sprouts</span> PlayZone
-                </h1>
-                <p style={{ color:'#8db4cc', fontWeight:600, fontSize:'0.95rem' }}>Ages 6–10 · Learn, play & earn real points!</p>
-                <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
-                  {[['10 Topics','#1a4a1a','#7ddb7d'],['3 Difficulty Levels','#0d2e4a','#7ab8e8'],['Earn Badges','#3a1e00','#f4a234']].map(([t,bg,c])=>(
-                    <span key={t} style={{ padding:'5px 14px', borderRadius:20, fontSize:'0.75rem', fontWeight:800, letterSpacing:'0.4px', textTransform:'uppercase', background:bg, color:c, border:`1.5px solid ${c}` }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-              <div style={{ fontSize:'5rem', filter:'drop-shadow(0 4px 12px rgba(0,0,0,.4))' }}>🌱</div>
+        {/* ===== GRADE SCREEN ===== */}
+        {screen === 'grade' && (
+          <div style={{animation:'qIn .4s ease'}}>
+            <div style={{background:'linear-gradient(135deg,#0d1e3a,#0a2a14)',borderRadius:22,padding:'24px 28px',marginBottom:28,border:'2px solid #0be881'}}>
+              <h1 style={{fontFamily:"'Fredoka One',cursive",fontSize:'2rem',color:'#fff',marginBottom:6}}>
+                👋 Hey <span style={{color:'#0be881'}}>{playerName}</span>! Pick your grade!
+              </h1>
+              <p style={{color:'#7db8cc',fontWeight:700}}>Questions are perfectly matched to your level 🎯</p>
             </div>
-
-            {/* DIFFICULTY */}
-            <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap' }}>
-              {(['easy','medium','hard'] as Diff[]).map(d => {
-                const dc = diffCfg[d], on = diff===d
-                return (
-                  <button key={d} className="diff-hover" onClick={() => setDiff(d)} style={{
-                    flex:1, minWidth:140, padding:'12px 16px', borderRadius:14, border:`2.5px solid ${on?dc.border:dc.offBorder}`,
-                    background: on ? dc.onBg : dc.offBg, color: dc.textCol, textAlign:'left', fontFamily:'inherit',
-                    boxShadow: on ? `0 0 0 3px ${dc.border}33` : 'none', transform: on ? 'translateY(-2px)' : 'none', transition:'all .22s',
-                  }}>
-                    <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'1.05rem', marginBottom:2 }}>{dc.label}</div>
-                    <div style={{ fontSize:'0.7rem', fontWeight:700, opacity:.75, textTransform:'uppercase', letterSpacing:'0.4px' }}>{dc.sub}</div>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* DIFF DESC */}
-            <div style={{ background: diff==='easy'?'#0f2b0f': diff==='medium'?'#2a1800':'#2a0a0a',
-              borderRadius:12, padding:'10px 16px', marginBottom:22, fontSize:'0.88rem', fontWeight:700,
-              color: diff==='easy'?'#7ddb7d': diff==='medium'?'#f4a234':'#f47272',
-              borderLeft:`4px solid ${diff==='easy'?'#7ddb7d': diff==='medium'?'#f4a234':'#f47272'}` }}>
-              {diffCfg[diff].desc}
-            </div>
-
-            <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'1.05rem', color:'#8db4cc', marginBottom:14, letterSpacing:'0.5px' }}>
-              🎮 Choose Your Game Topic
-            </div>
-
-            {/* CATEGORY GRID */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:28 }}>
-              {CATS.map(cc => (
-                <div key={cc.id} className="cat-card-hover" onClick={() => setCat(cc.id)} style={{
-                  background: cc.bg, borderRadius:18, padding:'16px 10px', textAlign:'center',
-                  border:`2.5px solid ${cat===cc.id ? cc.color : cc.border+'55'}`,
-                  boxShadow: cat===cc.id ? `0 0 0 3px ${cc.color}33` : 'none',
-                  transform: cat===cc.id ? 'translateY(-4px)' : 'none', transition:'all .28s',
-                }}>
-                  <div style={{ fontSize:'2.4rem', marginBottom:8, display:'block', filter:'drop-shadow(0 3px 6px rgba(0,0,0,.3))' }}>{cc.icon}</div>
-                  <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'0.88rem', color: cc.color, lineHeight:1.2 }}>{cc.name}</div>
-                  <div style={{ fontSize:'0.66rem', color: cc.color+'99', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.3px', marginTop:4 }}>{cc.sub}</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:24}}>
+              {GRADES.map(g => (
+                <div key={g.id} className="grade-card"
+                  onClick={() => { setGrade(g.id); setScreen('cat') }}
+                  style={{background:`linear-gradient(135deg,${g.color}22,${g.color}11)`,
+                    border:`2.5px solid ${g.color}`,borderRadius:18,padding:'18px 10px',
+                    textAlign:'center',transition:'all .28s',cursor:'pointer'}}>
+                  <div style={{fontSize:'2.2rem',marginBottom:6}}>{g.emoji}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1rem',color:g.color,marginBottom:3}}>{g.label}</div>
+                  <div style={{fontSize:'0.68rem',color:g.color+'99',fontWeight:700}}>{g.desc}</div>
                 </div>
               ))}
             </div>
-
-            <button className="go-hover" onClick={startGame} disabled={!cat} style={{
-              width:'100%', padding:18, border:'none', borderRadius:18,
-              background: cat ? 'linear-gradient(135deg,#1a6b1a,#3daa3d)' : '#1a2a1a',
-              color: cat ? '#fff' : '#3a5a3a', fontFamily:"'Fredoka One',cursive", fontSize:'1.35rem',
-              cursor: cat ? 'pointer' : 'not-allowed', transition:'all .28s',
-              boxShadow: cat ? '0 8px 24px rgba(29,107,29,.5)' : 'none',
-            }}>
-              {cat ? `🚀 Start Playing — ${catInfo?.name}!` : 'Select a topic above ☝️'}
-            </button>
           </div>
         )}
 
-        {/* ========== GAME ========== */}
-        {screen === 'game' && q && (
-          <div>
-            {/* MILESTONE */}
-            {showMilestone && (
-              <div style={{ background:'linear-gradient(135deg,#2a1800,#4a2d00)', border:'2px solid #f4a234', borderRadius:20, padding:24, textAlign:'center', marginBottom:18, animation:'qIn .4s ease' }}>
-                <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'1.9rem', color:'#f4b234' }}>🌟 Halfway There!</div>
-                <div style={{ color:'#c8a060', fontWeight:700, marginTop:6 }}>{correct} correct so far — you're growing fast, Sprout!</div>
-                <button onClick={() => setShowMilestone(false)} style={{ background:'#f4a234', color:'#1a0e00', border:'none', borderRadius:12, padding:'11px 26px', fontFamily:"'Fredoka One',cursive", fontSize:'1.1rem', cursor:'pointer', marginTop:14 }}>Keep Going! 🚀</button>
+        {/* ===== CATEGORY SCREEN ===== */}
+        {screen === 'cat' && gradeInfo && (
+          <div style={{animation:'qIn .4s ease'}}>
+            <div style={{background:`linear-gradient(135deg,${gradeInfo.color}22,#0a1a0d)`,borderRadius:22,padding:'22px 28px',marginBottom:24,border:`2px solid ${gradeInfo.color}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <div>
+                <h1 style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.8rem',color:'#fff',marginBottom:6}}>
+                  {gradeInfo.emoji} {gradeInfo.label} — Choose your topic!
+                </h1>
+                <p style={{color:gradeInfo.color,fontWeight:700,fontSize:'0.9rem'}}>{gradeInfo.desc} · 10 pts per correct answer</p>
               </div>
-            )}
+              <button onClick={() => setScreen('grade')}
+                style={{background:'rgba(255,255,255,.1)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:12,padding:'8px 16px',color:'#fff',cursor:'pointer',fontWeight:700,fontFamily:'inherit',fontSize:'0.85rem'}}>
+                ← Back
+              </button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}}>
+              {CATS.map(c => (
+                <div key={c.id} className="cat-card"
+                  onClick={() => { setCat(c.id); startGame() }}
+                  style={{background:c.bg,border:`2.5px solid ${c.color}`,borderRadius:20,
+                    padding:'20px 10px',textAlign:'center',cursor:'pointer',transition:'all .28s',
+                    boxShadow:`0 4px 20px ${c.color}22`}}>
+                  {/* Emoji Scene */}
+                  <div style={{fontSize:'1.1rem',letterSpacing:2,marginBottom:8,lineHeight:1.4,
+                    background:`${c.color}15`,borderRadius:12,padding:'8px 4px'}}>
+                    {c.scene}
+                  </div>
+                  <div style={{fontSize:'2rem',marginBottom:6}}>{c.icon}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.88rem',color:c.color,lineHeight:1.2}}>{c.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-            {/* PROGRESS */}
-            <div style={{ background:'#0d1e2e', borderRadius:14, padding:'14px 18px', marginBottom:16, border:'1.5px solid #1e3a5a' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, color:'#8db4cc', fontWeight:700, fontSize:'0.85rem' }}>
-                <span>Q {idx+1} / {total}</span>
-                <span>{catInfo?.icon} {catInfo?.name}</span>
+        {/* ===== GAME SCREEN ===== */}
+        {screen === 'game' && q && gradeInfo && catInfo && (
+          <div style={{animation:'qIn .35s ease'}}>
+            {/* Progress */}
+            <div style={{background:'#0d1e2e',borderRadius:14,padding:'12px 18px',marginBottom:14,border:'1.5px solid #1e3a5a'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8,color:'#7db8cc',fontWeight:800,fontSize:'0.82rem'}}>
+                <span>Q {idx+1} of {total}</span>
+                <span>{catInfo.icon} {catInfo.name} · {gradeInfo.label}</span>
               </div>
-              <div style={{ background:'#1a2e42', borderRadius:10, height:12, overflow:'hidden' }}>
-                <div style={{ width:`${pct}%`, height:'100%', background:'linear-gradient(90deg,#2d8a2d,#7ddb7d)', borderRadius:10, transition:'width .5s ease' }} />
+              <div style={{background:'#1a2e42',borderRadius:10,height:10,overflow:'hidden'}}>
+                <div style={{width:`${pct}%`,height:'100%',background:`linear-gradient(90deg,${catInfo.color},${gradeInfo.color})`,borderRadius:10,transition:'width .5s ease'}}/>
               </div>
             </div>
 
-            {/* Q CARD */}
-            <div style={{ background:'#0d1e2e', borderRadius:22, padding:'24px 22px', border:'2px solid #1e3a5a', marginBottom:16, animation:'qIn .35s ease' }}>
-              {/* BADGE */}
-              {(() => {
-                const badges: Record<string,[string,string]> = {
-                  text:  ['📖 Text Question','#0d2e4a,#5ab8f0'],
-                  match: ['🎯 Match Game','#2a1a3a,#c87af0'],
-                  drag:  ['🔀 Sorting Puzzle','#2a1800,#f4a234'],
-                  calc:  ['🔢 Calculate','#0a2a0a,#7ddb7d'],
-                  story: ['🎭 Story Challenge','#2a0a0a,#f47272'],
-                }
-                const key = cat==='french' && q.t!=='text' ? 'drag' : q.t
-                const [label, colors] = badges[key]||badges.text
-                const [bg,col] = colors.split(',')
-                return <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 13px', borderRadius:20, fontSize:'0.72rem', fontWeight:800, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom:14, background:bg, color:col }}>{label}</div>
-              })()}
-
-              {/* STORY BUBBLE */}
-              {q.story && (
-                <div style={{ background:'linear-gradient(135deg,#0d1e3a,#1a0d2e)', borderLeft:'4px solid #7c4dff', borderRadius:14, padding:'14px 16px', marginBottom:16, fontSize:'0.93rem', color:'#b8c8e8', fontWeight:600, lineHeight:1.65, overflow:'hidden' }}>
-                  <span style={{ fontSize:'2.2rem', float:'left', marginRight:12, lineHeight:1.1 }}>{q.char}</span>
-                  {q.story}
-                  <div style={{ clear:'both' }} />
+            {/* Question Card */}
+            <div style={{background:'#0d1e2e',borderRadius:24,padding:'28px 24px',border:`2px solid ${catInfo.color}44`,marginBottom:14,animation:'qIn .35s ease'}}>
+              {/* Image scene */}
+              {q.img && (
+                <div style={{background:`${catInfo.color}15`,border:`1.5px solid ${catInfo.color}33`,borderRadius:16,padding:'14px',marginBottom:18,textAlign:'center'}}>
+                  <div style={{fontSize:'2.4rem',letterSpacing:8,marginBottom:4}}>{q.img}</div>
+                  <div style={{fontSize:'0.7rem',color:catInfo.color+'99',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Look carefully 👀</div>
                 </div>
               )}
-
-              {/* CALC DISPLAY */}
-              {q.t === 'calc' && q.steps && (
-                <div style={{ background:'#081622', border:'1.5px solid #1e3a5a', borderRadius:12, padding:'14px 18px', marginBottom:16, fontSize:'0.9rem', color:'#8db4cc', fontWeight:600, lineHeight:1.9 }}>
-                  {q.steps.map((step, i) => {
-                    const parts = step.split('**')
-                    return (
-                      <div key={i} style={{ marginBottom: i<q.steps!.length-1 ? 4 : 0 }}>
-                        → {parts.map((p, j) => j%2===1 ? <strong key={j} style={{ color:j===parts.length-2?'#7ddb7d':'#f4a234' }}>{p}</strong> : <span key={j}>{p}</span>)}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Q TEXT */}
-              <div style={{ fontSize:'1.15rem', fontWeight:800, color:'#e8f4ff', lineHeight:1.5, marginBottom:18 }}>{q.q}</div>
-
-              {/* MATCH GAME */}
-              {q.t === 'match' && !answered && (
-                <MatchGame q={q} onCorrect={handleMatchCorrect} onWrong={handleMatchWrong} />
-              )}
-
-              {/* DRAG SORT */}
-              {q.t === 'drag' && !answered && (
-                <DragGame q={q} onResult={handleDragResult} />
-              )}
-
-              {/* OPTIONS (text, calc, story) */}
-              {(q.t === 'text' || q.t === 'calc' || q.t === 'story') && (
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                  {q.opts!.map((opt, i) => {
-                    const isCorrect = i===q.ans
-                    const isSel = i===selOpt
-                    let bg='#0a1e2e', border='2.5px solid #1e3a5a', color='#c8dff0'
-                    if (answered) {
-                      if (isCorrect) { bg='#0a2a0a'; border='2.5px solid #7ddb7d'; color='#7ddb7d' }
-                      else if (isSel) { bg='#2a0a0a'; border='2.5px solid #f47272'; color='#f47272' }
-                      else { bg='#0a1422'; border='2.5px solid #1a2e42'; color='#4a7a99' }
-                    }
-                    return (
-                      <button key={i} className={!answered?'opt-btn':''} onClick={() => handleOpt(i)} disabled={answered} style={{
-                        background:bg, border, borderRadius:14, padding:'13px 10px', textAlign:'center',
-                        fontSize:'0.9rem', fontWeight:700, color, cursor: answered?'default':'pointer',
-                        lineHeight:1.4, transition:'all .2s', fontFamily:'inherit',
-                        animation: answered && isCorrect ? 'popIn .45s ease' : answered && isSel && !isCorrect ? 'shk .4s ease' : 'none',
-                      }}>{opt}</button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* FEEDBACK */}
-              {showFb && (
-                <div style={{ textAlign:'center', padding:'16px 10px', animation:'popIn .3s ease' }}>
-                  <div style={{ fontSize:'2.8rem', marginBottom:6 }}>{fbCorrect?'🎉':'😅'}</div>
-                  <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'1.3rem', color: fbCorrect?'#7ddb7d':'#f47272' }}>
-                    {fbCorrect ? `Correct! +${DIFF_PTS[diff]} points!` : 'Not quite!'}
+              <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.4rem',color:'#fff',lineHeight:1.4,marginBottom:24}}>{q.q}</div>
+              {/* Options */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                {q.opts.map((opt, i) => {
+                  const isC = i === q.ans, isSel = i === sel
+                  let bg = '#0a1e2e', border = `2px solid #1e3a5a`, color = '#c8dff0', anim = ''
+                  if (answered) {
+                    if (isC) { bg='#0a3a0a'; border=`2px solid #0be881`; color='#0be881'; anim='pop .4s ease' }
+                    else if (isSel) { bg='#3a0a0a'; border=`2px solid #ff6b6b`; color='#ff6b6b'; anim='shake .4s ease' }
+                    else { bg='#080e18'; border='2px solid #1a2e42'; color='#4a7a99' }
+                  }
+                  return (
+                    <button key={i} className={!answered?'opt-btn':''} onClick={() => pick(i)} disabled={answered}
+                      style={{background:bg,border,borderRadius:16,padding:'16px 12px',textAlign:'center',
+                        fontSize:'0.95rem',fontWeight:800,color,cursor:answered?'default':'pointer',
+                        lineHeight:1.4,transition:'all .2s',fontFamily:'inherit',animation:anim}}>
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Feedback */}
+              {answered && (
+                <div style={{marginTop:20,padding:'16px',background:sel===q.ans?'#0a2a0a':'#2a0a0a',
+                  borderRadius:14,border:`1.5px solid ${sel===q.ans?'#0be881':'#ff6b6b'}`,
+                  animation:'qIn .3s ease',textAlign:'center'}}>
+                  <div style={{fontSize:'2rem',marginBottom:6}}>{sel===q.ans?'🎉':'💡'}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.1rem',color:sel===q.ans?'#0be881':'#ff9f43',marginBottom:6}}>
+                    {sel===q.ans?`+10 points! Well done!`:'Not quite — here is the fact:'}
                   </div>
-                  <div style={{ fontSize:'0.85rem', color:'#8db4cc', fontWeight:600, marginTop:8, lineHeight:1.5 }}>
-                    💡 {q.fact}
-                  </div>
+                  <div style={{color:'#8db4cc',fontWeight:700,fontSize:'0.88rem',lineHeight:1.5}}>💡 {q.fact}</div>
                 </div>
               )}
             </div>
 
-            {/* NEXT BTN */}
-            {(showFb && lives > 0) && (
-              <button className="next-hover" onClick={nextQ} style={{
-                width:'100%', padding:14, border:'none', borderRadius:14,
-                background:'linear-gradient(135deg,#1a5c1a,#2d8a2d)', color:'#fff',
-                fontFamily:"'Fredoka One',cursive", fontSize:'1.25rem', cursor:'pointer',
-                boxShadow:'0 6px 20px rgba(27,94,32,.4)', transition:'transform .2s', animation:'qIn .3s ease',
-              }}>
+            {/* Next Button */}
+            {answered && lives > 0 && (
+              <button onClick={next}
+                style={{width:'100%',padding:16,border:'none',borderRadius:16,
+                  background:`linear-gradient(135deg,${catInfo.color},${gradeInfo.color})`,
+                  color:'#000',fontFamily:"'Fredoka One',cursive",fontSize:'1.3rem',
+                  cursor:'pointer',boxShadow:`0 6px 24px ${catInfo.color}44`,transition:'transform .2s',
+                  animation:'qIn .3s ease'}}>
                 {idx+1 >= total ? '🏆 See My Results!' : 'Next Question ➡️'}
               </button>
             )}
           </div>
         )}
 
-        {/* ========== RESULT ========== */}
-        {screen === 'result' && (
-          <div style={{ animation:'qIn .45s ease' }}>
-            <div style={{ background:'#0d1e2e', border:'2px solid #1e3a5a', borderRadius:24, padding:'32px 24px', textAlign:'center' }}>
-              <div style={{ fontSize:'5rem', marginBottom:14 }}>
-                {resultPct>=80?'🏆':resultPct>=60?'⭐':'🌱'}
+        {/* ===== RESULT SCREEN ===== */}
+        {screen === 'result' && gradeInfo && catInfo && (
+          <div style={{animation:'qIn .45s ease',display:'flex',justifyContent:'center'}}>
+            <div style={{background:'#0d1e2e',border:`2px solid ${catInfo.color}`,borderRadius:28,padding:'40px 28px',maxWidth:520,width:'100%',textAlign:'center'}}>
+              <div style={{fontSize:'5rem',marginBottom:16}}>{resultPct>=80?'🏆':resultPct>=60?'⭐':'🌱'}</div>
+              <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'2rem',color:'#fff',marginBottom:8}}>
+                {resultPct>=80?`Brilliant, ${playerName}! 🏆`:resultPct>=60?`Great job, ${playerName}! ⭐`:`Keep growing, ${playerName}! 🌱`}
               </div>
-              <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:'2rem', color:'#fff', marginBottom:6 }}>
-  {resultPct>=80?`Amazing, ${playerName||'Sprout'}! 🏆`:resultPct>=60?`Great job, ${playerName||'Sprout'}! ⭐`:`Keep growing, ${playerName||'Sprout'}! 🌱`}
-              </div>
-              <div style={{ background:'linear-gradient(135deg,#1a5c1a,#2d8a2d)', display:'inline-block', padding:'10px 28px', borderRadius:30, color:'#fff', fontFamily:"'Fredoka One',cursive", fontSize:'1.5rem', margin:'14px 0' }}>
+              <div style={{background:`linear-gradient(135deg,${catInfo.color},${gradeInfo.color})`,display:'inline-block',padding:'10px 30px',borderRadius:30,color:'#000',fontFamily:"'Fredoka One',cursive",fontSize:'1.5rem',margin:'14px 0'}}>
                 ⭐ {pts} points
               </div>
-              <div style={{ color:'#8db4cc', fontWeight:700, marginBottom:24 }}>
-                {correct} out of {total} correct ({resultPct}%)
+              <div style={{color:'#8db4cc',fontWeight:700,marginBottom:6}}>{correct} of {total} correct ({resultPct}%)</div>
+              <div style={{color:catInfo.color,fontWeight:800,marginBottom:28,fontSize:'0.9rem'}}>{catInfo.icon} {catInfo.name} · {gradeInfo.label}</div>
+              <div style={{display:'grid',gap:10}}>
+                <button onClick={() => { setCat(null); setGrade(null); startGame() }}
+                  style={{padding:14,border:'none',borderRadius:14,background:`linear-gradient(135deg,${catInfo.color},${gradeInfo.color})`,color:'#000',fontFamily:"'Fredoka One',cursive",fontSize:'1.1rem',cursor:'pointer'}}>
+                  🔄 Play Again
+                </button>
+                <button onClick={() => { setCat(null); setScreen('cat') }}
+                  style={{padding:14,border:'none',borderRadius:14,background:'linear-gradient(135deg,#1a5c1a,#2d8a2d)',color:'#fff',fontFamily:"'Fredoka One',cursive",fontSize:'1.1rem',cursor:'pointer'}}>
+                  🎯 New Topic
+                </button>
+                <button onClick={() => { setGrade(null); setCat(null); setScreen('grade') }}
+                  style={{padding:14,border:'none',borderRadius:14,background:'linear-gradient(135deg,#1a2e4a,#2d4a6b)',color:'#fff',fontFamily:"'Fredoka One',cursive",fontSize:'1.1rem',cursor:'pointer'}}>
+                  📚 Change Grade
+                </button>
+                <button onClick={() => { setPlayerName(''); setNameInput(''); setGrade(null); setCat(null); setScreen('name') }}
+                  style={{padding:14,border:'none',borderRadius:14,background:'#1a1a2a',color:'#8db4cc',fontFamily:"'Fredoka One',cursive",fontSize:'1rem',cursor:'pointer',border:'1px solid #2a3a4a'}}>
+                  👤 New Player
+                </button>
               </div>
-              <button onClick={startGame} style={{ width:'100%', padding:13, border:'none', borderRadius:14, background:'linear-gradient(135deg,#4a2d8a,#7a5acc)', color:'#fff', fontFamily:"'Fredoka One',cursive", fontSize:'1.15rem', cursor:'pointer', marginBottom:10 }}>
-                🔄 Play Again
-              </button>
-              <button onClick={() => { setScreen('home'); setCat(null); setLives(3); setPts(0) }} style={{ width:'100%', padding:13, border:'none', borderRadius:14, background:'linear-gradient(135deg,#1a5c1a,#2d8a2d)', color:'#fff', fontFamily:"'Fredoka One',cursive", fontSize:'1.15rem', cursor:'pointer' }}>
-                🏠 Pick New Topic
-              </button>
-              <button onClick={()=>{setScreen('name');setPlayerName('');setNameInput('');setCat(null);setLives(3);setPts(0)}} style={{width:'100%',padding:13,border:'none',borderRadius:14,background:'linear-gradient(135deg,#0d2e4a,#185fa5)',color:'#fff',fontFamily:"'Fredoka One',cursive",fontSize:'1.15rem',cursor:'pointer',marginTop:10}}>
-              👤 New Player
-              </button>
             </div>
           </div>
         )}
