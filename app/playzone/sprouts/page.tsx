@@ -4745,7 +4745,7 @@ export default function SproutsPlayzone() {
       <div style={{background:'linear-gradient(90deg,#0a2a14,#0d3d1a,#0a2a14)',padding:'10px 20px',
         display:'flex',alignItems:'center',justifyContent:'space-between',
         borderBottom:'2px solid #0be881',position:'sticky',top:0,zIndex:50}}>
-        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1rem',color:'#fff',letterSpacing:0,whiteSpace:'nowrap' }}>
+        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1rem',color:'#fff',letterSpacing:0,whiteSpace:'nowrap'}}>
           🌿 LIFEWS<span style={{color:'#0be881'}}>Connect</span> · PlayZone
         </div>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
