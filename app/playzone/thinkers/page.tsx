@@ -4595,7 +4595,7 @@ export default function ThinkersPlayzone() {
   const pct = total > 0 ? (idx/total)*100 : 0
   const timerMax = ladder === 1 ? TIMER_L1 : ladder === 2 ? TIMER_L2 : TIMER_L3
   const lad_colors: Record<number,string> = {1:'#ff6b9d', 2:'#ffd32a', 3:'#ff4500'}
-  const lad_names: Record<number,string> = {1:'🔥 Ladder 1 — 45 Seconds', 2:'⚡ Ladder 2 — 30 Seconds', 3:'🚀 Ladder 3 — 15 Seconds'}
+  const lad_names: Record<number,string> = {1:'🧠 Ladder 1 — 30 Seconds', 2:'🔬 Ladder 2 — 20 Seconds', 3:'⚡ Ladder 3 — 10 Seconds'}
 
   useEffect(() => {
     if (!timerActive || answered) return
