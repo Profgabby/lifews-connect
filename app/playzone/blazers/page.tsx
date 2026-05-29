@@ -4612,7 +4612,7 @@ export default function BlazersPlayzone() {
     const nl = lives - 1
     setLives(nl)
     if (nl <= 0) setTimeout(() => setScreen('fail'), 1500)
-  },
+  }
 
   function startLadder(lad: 1|2|3, existingUsed?: number[]) {
     if (!grade || !cat) return
