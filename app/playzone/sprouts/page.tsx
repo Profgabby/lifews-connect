@@ -4721,6 +4721,7 @@ export default function SproutsPlayzone() {
     .opt-btn:hover:not(:disabled){transform:scale(1.03)!important;filter:brightness(1.15)!important}
     .go-btn:hover:not(:disabled){transform:translateY(-4px)!important;box-shadow:0 20px 40px rgba(11,232,129,.5)!important}
     .name-inp:focus{border-color:#0be881!important;box-shadow:0 0 0 3px rgba(11,232,129,.2)!important}
+    @media(min-width:600px){.grade-grid{grid-template-columns:repeat(4,1fr)!important}.cat-grid{grid-template-columns:repeat(5,1fr)!important}}
   `
 
   const lad_colors = ['','#0be881','#ffd32a','#ff6b9d']
@@ -4744,7 +4745,7 @@ export default function SproutsPlayzone() {
       <div style={{background:'linear-gradient(90deg,#0a2a14,#0d3d1a,#0a2a14)',padding:'10px 20px',
         display:'flex',alignItems:'center',justifyContent:'space-between',
         borderBottom:'2px solid #0be881',position:'sticky',top:0,zIndex:50}}>
-        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.2rem',color:'#fff',letterSpacing:1}}>
+        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1rem',color:'#fff',letterSpacing:0,whiteSpace:'nowrap' }}>
           🌿 LIFEWS<span style={{color:'#0be881'}}>Connect</span> · PlayZone
         </div>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -4764,7 +4765,7 @@ export default function SproutsPlayzone() {
         </div>
       </div>
 
-      <div style={{maxWidth:960,margin:'0 auto',padding:'20px 14px'}}>
+      <div style={{maxWidth:960,margin:'0 auto',padding:'12px 10px'}}>
 
         {/* ===== NAME SCREEN ===== */}
         {screen==='name' && (
@@ -4815,12 +4816,12 @@ export default function SproutsPlayzone() {
               </h1>
               <p style={{color:'#7db8cc',fontWeight:700}}>Questions are perfectly matched to your level 🎯 · You need 9/10 to unlock next ladder!</p>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+            <div className='grade-grid' style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12,marginBottom:16}}>
               {GRADES.map(g=>(
                 <div key={g.id} className="grade-card"
                   onClick={()=>{setGrade(g.id);setUsedIdxs([]);setLadderScores([]);setScreen('cat')}}
                   style={{background:`linear-gradient(135deg,${g.color}22,${g.color}11)`,
-                    border:`2.5px solid ${g.color}`,borderRadius:18,padding:'18px 10px',
+                    border:`2.5px solid ${g.color}`,borderRadius:18,padding:'14px 8px',
                     textAlign:'center',transition:'all .28s'}}>
                   <div style={{fontSize:'2rem',marginBottom:6}}>{g.emoji}</div>
                   <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.95rem',color:g.color,marginBottom:2}}>{g.label}</div>
@@ -4846,12 +4847,12 @@ export default function SproutsPlayzone() {
                 ← Back
               </button>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}}>
+            <div className='cat-grid' style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14}}>
               {CATS.map(c=>(
                 <div key={c.id} className="cat-card"
                   onClick={()=>{setCat(c.id);setUsedIdxs([]);setLadder(1);setTimeout(()=>startLadder(1,[]),50)}}
                   style={{background:c.bg,border:`2.5px solid ${c.color}`,borderRadius:20,
-                    padding:'18px 8px',textAlign:'center',cursor:'pointer',transition:'all .28s',
+                    padding:'14px 8px',textAlign:'center',cursor:'pointer',transition:'all .28s',
                     boxShadow:`0 4px 20px ${c.color}22`}}>
                   <div style={{fontSize:'1rem',letterSpacing:2,marginBottom:8,lineHeight:1.4,
                     background:`${c.color}15`,borderRadius:10,padding:'6px 4px'}}>{c.scene}</div>
@@ -4901,7 +4902,7 @@ export default function SproutsPlayzone() {
                   <div style={{fontSize:'0.65rem',color:catInfo.color+'99',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Look carefully 👀</div>
                 </div>
               )}
-              <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.3rem',color:'#fff',lineHeight:1.4,marginBottom:20}}>{q.q}</div>
+              <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.1rem',color:'#fff',lineHeight:1.4,marginBottom:16}}>{q.q}</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                 {q.opts.map((opt,i)=>{
                   const isC = i===q.ans
@@ -4915,7 +4916,7 @@ export default function SproutsPlayzone() {
                   return(
                     <button key={i} className={!answered?'opt-btn':''} onClick={()=>pick(i)} disabled={answered}
                       style={{background:bg,border,borderRadius:14,padding:'14px 10px',textAlign:'center',
-                        fontSize:'0.9rem',fontWeight:800,color,cursor:answered?'default':'pointer',
+                        fontSize:'0.85rem',fontWeight:800,color,cursor:answered?'default':'pointer',
                         lineHeight:1.4,transition:'all .2s',fontFamily:'inherit',animation:anim}}>
                       {opt}
                     </button>
