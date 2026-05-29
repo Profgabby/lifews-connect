@@ -4744,7 +4744,7 @@ export default function ThinkersPlayzone() {
               <div style={{background:'rgba(124,106,255,.1)',border:'1.5px solid rgba(124,106,255,.3)',borderRadius:14,padding:'12px',marginBottom:16,textAlign:'left'}}>
                 <div style={{color:'#7c6aff',fontWeight:900,fontSize:'0.8rem',marginBottom:6}}>🔒 UNLOCK REQUIREMENT</div>
                 <p style={{color:'#cc7a99',fontWeight:700,fontSize:'0.82rem',lineHeight:1.5}}>
-                  You must have completed <strong style={{color:'#00d8d6'}}>5 or more Blazers topics</strong> (all 3 ladders each) to play Blazers.
+                  You must have completed <strong style={{color:'#00d8d6'}}>5 or more Blazers topics</strong> (all 3 ladders each) to play Thinkers.
                 </p>
               </div>
               <div style={{marginBottom:12,textAlign:'left'}}>
