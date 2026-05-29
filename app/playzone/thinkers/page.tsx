@@ -4770,7 +4770,7 @@ export default function ThinkersPlayzone() {
                 onClick={()=>{if(nameInput.trim()&&parseInt(blazersCount)>=3){setPlayerName(nameInput.trim());setScreen('grade')}}}
                 disabled={!nameInput.trim()||!blazersCount||parseInt(blazersCount)<5}
                 style={{width:'100%',padding:14,border:'none',borderRadius:16,
-                  background:(nameInput.trim()&&blazersCount&&parseInt(blazersCount)>=5)?'linear-gradient(135deg,#7c6aff,#00d8d6)':'#2a1a1a',
+                  background:(nameInput.trim()background:(nameInput.trim()&&blazersCount&&parseInt(blazersCount)>=5)?'linear-gradient(135deg,#7c6aff,#00d8d6)':'#2a1a1a'background:(nameInput.trim()&&blazersCount&&parseInt(blazersCount)>=5)?'linear-gradient(135deg,#7c6aff,#00d8d6)':'#2a1a1a'blazersCountbackground:(nameInput.trim()&&blazersCount&&parseInt(blazersCount)>=5)?'linear-gradient(135deg,#7c6aff,#00d8d6)':'#2a1a1a'background:(nameInput.trim()&&blazersCount&&parseInt(blazersCount)>=5)?'linear-gradient(135deg,#7c6aff,#00d8d6)':'#2a1a1a'parseInt(blazersCount)>=5)?'linear-gradient(135deg,#1a3a8f,#2563eb)':'#1a1a2e',
                   color:(nameInput.trim()&&blazersCount&&parseInt(blazersCount)>=5)?'#fff':'#3a3a5a',
                   fontFamily:"'Fredoka One',cursive",fontSize:'1.2rem',cursor:'pointer',transition:'all .28s'}}>
                 🧠 Enter Thinkers!
@@ -4909,7 +4909,7 @@ export default function ThinkersPlayzone() {
             {answered && lives>0 && (
               <button onClick={next}
                 style={{width:'100%',padding:14,border:'none',borderRadius:14,
-                  background:`linear-gradient(135deg,#ff6b9d,#ff4500)`,
+                  background:'linear-gradient(135deg,#1a3a8f,#2563eb)',
                   color:'#fff',fontFamily:"'Fredoka One',cursive",fontSize:'1.2rem',
                   cursor:'pointer',animation:'qIn .3s ease'}}>
                 {idx+1>=total?'📊 See My Result':'Next Question ➡️'}
