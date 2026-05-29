@@ -942,7 +942,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the connection between energy access and education in Nigeria?", opts:["No connection 🤷", "Reliable electricity enables students to study after dark use computers and access online learning 💡📚", "Only about school buildings 🏫", "Only about university 🎓"], ans:1, fact:"Without electricity Nigerian students cannot study at night or use computers — energy access equals education opportunity!", img:"💡📚🇳🇬"},
         {q:"What is the future energy mix for Nigeria?", opts:["Only natural gas ⛽", "A diverse mix of solar wind hydro gas storage and smart grid technology ♻️⚡", "Only solar power ☀️", "Only imported energy 🚢"], ans:1, fact:"Nigeria's future energy mix will combine solar mini-grids gas hydro and storage for reliable clean electricity!", img:"♻️⚡🇳🇬"},
       ],
-  }
+  },
   water: {
       n1: [
         {q:"What do we drink when thirsty?", opts:["Juice 🥤", "Water 💧", "Milk 🥛", "Soda 🥤"], ans:1, fact:"Water is the most important drink — our bodies are 60-70% water!", img:"💧😋✅"},
