@@ -1392,7 +1392,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is Lake Chad's crisis?", opts:["The lake is growing 📈", "Lake Chad shrank 90% threatening millions who depend on it for water and food 💧❌", "Only affecting Chad 🇹🇩", "A seasonal change 🔄"], ans:1, fact:"Lake Chad shrank from 25,000 km² to 2,500 km² threatening 30 million people across 4 countries!", img:"💧❌🌍"},
         {q:"What is the right to water?", opts:["A luxury right 💰", "The human right to access sufficient safe and affordable water recognised by the UN 💧⚖️", "A new idea 🔬", "Only for rich countries 🌍"], ans:1, fact:"The UN recognised safe clean water as a fundamental human right in 2010 — yet billions lack it!", img:"💧⚖️🌍"},
       ],
-  }
+  },
   nature: {
       n1: [
         {q:"What is photosynthesis?", opts:["How animals breathe 🐄", "How plants make food using sunlight CO₂ and water 🌞", "How leaves change colour 🍂", "How roots grow 🌱"], ans:1, fact:"Photosynthesis: Sunlight + CO₂ + water = sugar + oxygen — the foundation of all life!", img:"🌞🌿💚"},
@@ -1842,7 +1842,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is Nigeria's most biodiverse region?", opts:["The Sahara 🏜️", "The Niger Delta — a coastal wetland of global ecological importance 🌿🌊", "The Jos Plateau ⛰️", "Lagos State 🏙️"], ans:1, fact:"Nigeria's Niger Delta is one of Africa's most biodiverse regions home to unique mangroves and wildlife!", img:"🌿🌊🇳🇬"},
         {q:"What is an apex predator's role in nature?", opts:["No role 🤷", "Apex predators regulate prey populations maintaining ecosystem balance 🦁🌿", "Only to look fierce 🦁", "Only in Africa 🌍"], ans:1, fact:"Without apex predators prey populations explode overgraze vegetation and collapse ecosystems!", img:"🦁🌿🌍"},
       ],
-  }
+  },
   climate: {
       n1: [
         {q:"What is global warming?", opts:["Sun getting hotter ☀️", "Earth's average temperature rising due to greenhouse gases 🌡️", "Warmer winters ❄️", "Hot summers ☀️"], ans:1, fact:"Burning fossil fuels releases CO₂ that traps heat causing Earth's temperature to rise!", img:"🌡️🌍💨"},
@@ -2292,7 +2292,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the IPCC?", opts:["A solar panel company ☀️", "The world's leading climate science body advising governments 🔬🌍", "A power station 🏭", "An energy company ⚡"], ans:1, fact:"The IPCC reviews thousands of scientific studies providing the evidence base for climate policy!", img:"🔬🌍📊"},
         {q:"What is ocean acidification?", opts:["Ocean getting saltier 🧂", "Oceans absorbing CO₂ becoming more acidic threatening marine life 🐚❌", "A type of pollution ☠️", "Ocean getting warmer 🌡️"], ans:1, fact:"Oceans absorb 30% of our CO₂ making them more acidic dissolving coral and shells!", img:"🐚❌🌊"},
       ],
-  }
+  },
   science: {
       n1: [
         {q:"What does a microscope do?", opts:["Measures temperature 🌡️", "Magnifies tiny objects up to 1000 times 🔬", "Predicts weather 🌤️", "Measures rainfall 🌧️"], ans:1, fact:"Microscopes reveal bacteria cells and soil organisms invisible to the naked eye!", img:"🔬✨🦠"},
@@ -2742,7 +2742,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the water footprint of food production?", opts:["How wet food is 💧", "Total water used to produce food from farm to fork 💧🌾", "Only irrigation water 💧", "Only rainfall 🌧️"], ans:1, fact:"A kilogram of beef uses 15,000 litres of water — understanding this helps save water!", img:"💧🌾📊"},
         {q:"What is synthetic biology?", opts:["Fake food 🍽️", "Engineering microorganisms to produce real food ingredients like proteins 🧬", "Organic farming 🌿", "Artificial fertilizers 🧪"], ans:1, fact:"Lab-grown meat and microbial proteins could feed billions using a fraction of land and water!", img:"🧬🥩💡"},
       ],
-  }
+  },
   animals: {
       n1: [
         {q:"Which animal pollinates most food crops?", opts:["Lion 🦁", "Bee 🐝", "Shark 🦈", "Eagle 🦅"], ans:1, fact:"Bees pollinate over 70% of food crops — without them no apples almonds or many vegetables!", img:"🐝🌸🍎"},
@@ -3192,7 +3192,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is a symbiotic relationship?", opts:["Animals competing 🦁", "A close beneficial relationship between two different species 🌺🐝", "Animals living alone 🐾", "Plants and animals competing 🌿"], ans:1, fact:"Bees and flowers have mutualistic symbiosis — bees get nectar flowers get pollinated!", img:"🌺🐝✅"},
         {q:"What is community-based conservation?", opts:["Government conservation only 🏛️", "Local communities protecting and benefiting from wildlife and natural resources 🤝🌍", "Only for tourists 📸", "Only in national parks 🌳"], ans:1, fact:"Successful conservation requires local communities to see wildlife as valuable and worth protecting!", img:"🤝🌍🇳🇬"},
       ],
-  }
+  },
   soil: {
       n1: [
         {q:"What is soil made of?", opts:["Only sand 🏖️", "Rock particles dead organisms water air and billions of living creatures 🌍", "Only clay 🏺", "Only water 💧"], ans:1, fact:"Healthy soil is a living ecosystem — one teaspoon contains more organisms than people on Earth!", img:"🌍🪱🔬"},
@@ -3642,7 +3642,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is a cover crop?", opts:["A crop covering another 🌾", "A crop grown between seasons to protect soil and add nutrients 🌿", "A greenhouse crop 🌿", "A very tall crop 🌳"], ans:1, fact:"Mucuna and cowpea cover crops protect Nigerian farmers' soil from erosion and add free nitrogen!", img:"🌿🌾✅"},
         {q:"What is the soil food web?", opts:["A spider web in soil 🕸️", "Complex network of organisms living in and processing soil 🪱", "A type of composting ♻️", "A soil test 🧪"], ans:1, fact:"Bacteria → fungi → nematodes → mites → beetles → earthworms — each cycles nutrients!", img:"🪱🔬🌍"},
       ],
-  }
+  },
   french: {
       n1: [
         {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is apple! La pomme est rouge et délicieuse!", img:"🍎🇫🇷✨"},
@@ -4092,7 +4092,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"Comment dit-on 'cloud' en français?", opts:["La pluie 🌧️", "Le soleil ☀️", "Le nuage ☁️", "Le vent 💨"], ans:2, fact:"Le nuage is cloud! Les nuages portent la pluie et régulent la température!", img:"☁️🇫🇷🌧️"},
         {q:"Comment dit-on 'pollution' en français?", opts:["La solution ✅", "La pollution ☠️", "La révolution 🔄", "L'évolution 🧬"], ans:1, fact:"La pollution nuit à l'environnement — réduisons nos déchets pour protéger la nature!", img:"☠️🇫🇷❌"},
       ],
-  }
+  },
   weather: {
       n1: [
         {q:"What is sunny weather?", opts:["When it rains 🌧️", "When the sun shines brightly with clear skies ☀️", "When it snows ❄️", "When it is very windy 💨"], ans:1, fact:"Sunny weather means the sun is shining — great for playing outside and for plant growth!", img:"☀️😊🌿"},
@@ -4542,7 +4542,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is wind chill?", opts:["Just cold wind 💨", "How much colder the air feels to humans because wind removes body heat 🌡️", "Actual air temperature 🌡️", "A type of frost ❄️"], ans:1, fact:"At cold temperatures with strong wind it can feel much colder — wind chill causes frostbite!", img:"💨🌡️❄️"},
         {q:"What is storm surge?", opts:["Ocean waves 🌊", "A rise in sea level caused by tropical storms pushing water toward the coast 🌊⚠️", "A type of rainfall 🌧️", "A type of flooding 🌊"], ans:1, fact:"Storm surges threaten Nigeria's coastal communities during intense weather events!", img:"🌊⚠️🇳🇬"},
       ],
-  }
+  },
 }
 
 
