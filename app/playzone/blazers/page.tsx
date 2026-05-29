@@ -4545,7 +4545,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the MOST accurate statement about food system transformation?", opts:["Only about technology", "Political economic and equity issues must be addressed alongside technology ⚖️🔬", "Only for developing countries", "Technology solves everything"], ans:1, fact:"Technology enables solutions but food insecurity is fundamentally about power politics and inequality — not just productivity!", img:"⚖️🔬🌍"},
         {q:"What is the MAIN ecological service of diverse crop rotations vs monocultures?", opts:["Better taste", "Breaks pest cycles adds nutrients and feeds diverse soil biology improving long-term fertility 🌾🔄", "Lower costs", "Less water needed"], ans:1, fact:"Diverse rotations feed diverse soil life prevent pathogen buildup and cycle a broader range of nutrients!", img:"🌾🔄🔬"},
       ],
-  }
+  },
 }
 
 
@@ -4554,7 +4554,7 @@ function shuffle<T>(arr: T[]): T[] {
   for (let i = a.length-1; i > 0; i--) {
     const j = Math.floor(Math.random()*(i+1));
     [a[i],a[j]] = [a[j],a[i]]
-  }
+  },
   return a
 }
 
@@ -4612,7 +4612,7 @@ export default function BlazersPlayzone() {
     const nl = lives - 1
     setLives(nl)
     if (nl <= 0) setTimeout(() => setScreen('fail'), 1500)
-  }
+  },
 
   function startLadder(lad: 1|2|3, existingUsed?: number[]) {
     if (!grade || !cat) return
@@ -4631,7 +4631,7 @@ export default function BlazersPlayzone() {
     const timer = lad === 1 ? TIMER_L1 : lad === 2 ? TIMER_L2 : TIMER_L3
     setTimeLeft(timer)
     setTimerActive(true)
-  }
+  },
 
   function pick(optIdx: number) {
     if (answered) return
@@ -4649,7 +4649,7 @@ export default function BlazersPlayzone() {
       setLives(nl)
       if (nl <= 0) setTimeout(() => setScreen('fail'), 1500)
     }
-  }
+  },
 
   function next() {
     const nx = idx+1
@@ -4669,7 +4669,7 @@ export default function BlazersPlayzone() {
     const timer = ladder === 1 ? TIMER_L1 : ladder === 2 ? TIMER_L2 : TIMER_L3
     setTimeLeft(timer)
     setTimerActive(true)
-  }
+  },
 
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
