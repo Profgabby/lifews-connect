@@ -495,7 +495,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the concept of 'true cost accounting' in food systems and what would it reveal about cheap food?", opts:["A new accounting method 📊", "Accounting for environmental social and health externalities shows cheap food has enormous hidden costs paid by society not by consumers 💰🌍", "Only about production costs 💰", "Only about environmental costs 🌿"], ans:1, fact:"When you add environmental degradation health costs and social harms the real price of ultra-processed food and factory-farmed meat is far higher than shelf prices!", img:"💰🌍📊"},
         {q:"Which political economy framework BEST explains why food policy reforms fail in Nigeria despite strong evidence?", opts:["Evidence is weak 📊", "Vested interests — processors importers and political elites benefit from current food system dysfunction creating powerful coalitions against reform ⚖️🏛️", "Nigerians oppose reform 🤷", "Technical capacity is lacking 🔬"], ans:1, fact:"Food policy reform threatens the profitable interests of importers processors and political rent-seekers who benefit from current inefficiencies!", img:"⚖️🏛️🇳🇬"},
       ],
-  }
+  },
   energy: {
       n1: [
         {q:"Nigeria has abundant gas but frequent power cuts. MAIN reason?", opts:["Not enough gas", "Infrastructure decay transmission losses and under-investment in grid 📊", "Nigerians use too much electricity", "Weather is too hot"], ans:1, fact:"Nigeria generates under 5,000MW for 200 million people — infrastructure decay and transmission losses are the core problem!", img:"📊⚡🇳🇬"},
@@ -4545,7 +4545,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the MOST accurate statement about food system transformation?", opts:["Only about technology", "Political economic and equity issues must be addressed alongside technology ⚖️🔬", "Only for developing countries", "Technology solves everything"], ans:1, fact:"Technology enables solutions but food insecurity is fundamentally about power politics and inequality — not just productivity!", img:"⚖️🔬🌍"},
         {q:"What is the MAIN ecological service of diverse crop rotations vs monocultures?", opts:["Better taste", "Breaks pest cycles adds nutrients and feeds diverse soil biology improving long-term fertility 🌾🔄", "Lower costs", "Less water needed"], ans:1, fact:"Diverse rotations feed diverse soil life prevent pathogen buildup and cycle a broader range of nutrients!", img:"🌾🔄🔬"},
       ],
-  }
+  },
 }
 
 
