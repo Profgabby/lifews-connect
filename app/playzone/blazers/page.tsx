@@ -4631,7 +4631,7 @@ export default function BlazersPlayzone() {
     const timer = lad === 1 ? TIMER_L1 : lad === 2 ? TIMER_L2 : TIMER_L3
     setTimeLeft(timer)
     setTimerActive(true)
-  },
+  }
 
   function pick(optIdx: number) {
     if (answered) return
@@ -4649,7 +4649,7 @@ export default function BlazersPlayzone() {
       setLives(nl)
       if (nl <= 0) setTimeout(() => setScreen('fail'), 1500)
     }
-  },
+  }
 
   function next() {
     const nx = idx+1
@@ -4669,7 +4669,7 @@ export default function BlazersPlayzone() {
     const timer = ladder === 1 ? TIMER_L1 : ladder === 2 ? TIMER_L2 : TIMER_L3
     setTimeLeft(timer)
     setTimerActive(true)
-  },
+  }
 
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
