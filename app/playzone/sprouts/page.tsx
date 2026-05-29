@@ -4816,15 +4816,15 @@ export default function SproutsPlayzone() {
               </h1>
               <p style={{color:'#7db8cc',fontWeight:700}}>Questions are perfectly matched to your level 🎯 · You need 9/10 to unlock next ladder!</p>
             </div>
-            <div className='grade-grid' style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12,marginBottom:16}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,marginBottom:16}}>
               {GRADES.map(g=>(
                 <div key={g.id} className="grade-card"
                   onClick={()=>{setGrade(g.id);setUsedIdxs([]);setLadderScores([]);setScreen('cat')}}
                   style={{background:`linear-gradient(135deg,${g.color}22,${g.color}11)`,
                     border:`2.5px solid ${g.color}`,borderRadius:18,padding:'14px 8px',
                     textAlign:'center',transition:'all .28s'}}>
-                  <div style={{fontSize:'2rem',marginBottom:6}}>{g.emoji}</div>
-                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.95rem',color:g.color,marginBottom:2}}>{g.label}</div>
+                  <div style={{fontSize:'1.8rem',marginBottom:4}}>{g.emoji}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.88rem',color:g.color,marginBottom:2}}>{g.label}</div>
                   <div style={{fontSize:'0.65rem',color:g.color+'99',fontWeight:700}}>{g.desc}</div>
                 </div>
               ))}
@@ -4847,17 +4847,17 @@ export default function SproutsPlayzone() {
                 ← Back
               </button>
             </div>
-            <div className='cat-grid' style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
               {CATS.map(c=>(
                 <div key={c.id} className="cat-card"
                   onClick={()=>{setCat(c.id);setUsedIdxs([]);setLadder(1);setTimeout(()=>startLadder(1,[]),50)}}
-                  style={{background:c.bg,border:`2.5px solid ${c.color}`,borderRadius:20,
-                    padding:'14px 8px',textAlign:'center',cursor:'pointer',transition:'all .28s',
+                  style={{background:c.bg,border:`2.5px solid ${c.color}`,borderRadius:16,
+                    padding:'12px 8px',textAlign:'center',cursor:'pointer',transition:'all .28s',
                     boxShadow:`0 4px 20px ${c.color}22`}}>
                   <div style={{fontSize:'1rem',letterSpacing:2,marginBottom:8,lineHeight:1.4,
                     background:`${c.color}15`,borderRadius:10,padding:'6px 4px'}}>{c.scene}</div>
-                  <div style={{fontSize:'1.8rem',marginBottom:5}}>{c.icon}</div>
-                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.82rem',color:c.color,lineHeight:1.2}}>{c.name}</div>
+                  <div style={{fontSize:'1.6rem',marginBottom:4}}>{c.icon}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.78rem',color:c.color,lineHeight:1.2}}>{c.name}</div>
                 </div>
               ))}
             </div>
