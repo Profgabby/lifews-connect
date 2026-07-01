@@ -942,7 +942,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the connection between energy access and education in Nigeria?", opts:["No connection 🤷", "Reliable electricity enables students to study after dark use computers and access online learning 💡📚", "Only about school buildings 🏫", "Only about university 🎓"], ans:1, fact:"Without electricity Nigerian students cannot study at night or use computers — energy access equals education opportunity!", img:"💡📚🇳🇬"},
         {q:"What is the future energy mix for Nigeria?", opts:["Only natural gas ⛽", "A diverse mix of solar wind hydro gas storage and smart grid technology ♻️⚡", "Only solar power ☀️", "Only imported energy 🚢"], ans:1, fact:"Nigeria's future energy mix will combine solar mini-grids gas hydro and storage for reliable clean electricity!", img:"♻️⚡🇳🇬"},
       ],
-  },
+  }
   water: {
       n1: [
         {q:"What do we drink when thirsty?", opts:["Juice 🥤", "Water 💧", "Milk 🥛", "Soda 🥤"], ans:1, fact:"Water is the most important drink — our bodies are 60-70% water!", img:"💧😋✅"},
@@ -1392,7 +1392,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is Lake Chad's crisis?", opts:["The lake is growing 📈", "Lake Chad shrank 90% threatening millions who depend on it for water and food 💧❌", "Only affecting Chad 🇹🇩", "A seasonal change 🔄"], ans:1, fact:"Lake Chad shrank from 25,000 km² to 2,500 km² threatening 30 million people across 4 countries!", img:"💧❌🌍"},
         {q:"What is the right to water?", opts:["A luxury right 💰", "The human right to access sufficient safe and affordable water recognised by the UN 💧⚖️", "A new idea 🔬", "Only for rich countries 🌍"], ans:1, fact:"The UN recognised safe clean water as a fundamental human right in 2010 — yet billions lack it!", img:"💧⚖️🌍"},
       ],
-  },
+  }
   nature: {
       n1: [
         {q:"What is photosynthesis?", opts:["How animals breathe 🐄", "How plants make food using sunlight CO₂ and water 🌞", "How leaves change colour 🍂", "How roots grow 🌱"], ans:1, fact:"Photosynthesis: Sunlight + CO₂ + water = sugar + oxygen — the foundation of all life!", img:"🌞🌿💚"},
@@ -1842,7 +1842,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is Nigeria's most biodiverse region?", opts:["The Sahara 🏜️", "The Niger Delta — a coastal wetland of global ecological importance 🌿🌊", "The Jos Plateau ⛰️", "Lagos State 🏙️"], ans:1, fact:"Nigeria's Niger Delta is one of Africa's most biodiverse regions home to unique mangroves and wildlife!", img:"🌿🌊🇳🇬"},
         {q:"What is an apex predator's role in nature?", opts:["No role 🤷", "Apex predators regulate prey populations maintaining ecosystem balance 🦁🌿", "Only to look fierce 🦁", "Only in Africa 🌍"], ans:1, fact:"Without apex predators prey populations explode overgraze vegetation and collapse ecosystems!", img:"🦁🌿🌍"},
       ],
-  },
+  }
   climate: {
       n1: [
         {q:"What is global warming?", opts:["Sun getting hotter ☀️", "Earth's average temperature rising due to greenhouse gases 🌡️", "Warmer winters ❄️", "Hot summers ☀️"], ans:1, fact:"Burning fossil fuels releases CO₂ that traps heat causing Earth's temperature to rise!", img:"🌡️🌍💨"},
@@ -2292,7 +2292,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the IPCC?", opts:["A solar panel company ☀️", "The world's leading climate science body advising governments 🔬🌍", "A power station 🏭", "An energy company ⚡"], ans:1, fact:"The IPCC reviews thousands of scientific studies providing the evidence base for climate policy!", img:"🔬🌍📊"},
         {q:"What is ocean acidification?", opts:["Ocean getting saltier 🧂", "Oceans absorbing CO₂ becoming more acidic threatening marine life 🐚❌", "A type of pollution ☠️", "Ocean getting warmer 🌡️"], ans:1, fact:"Oceans absorb 30% of our CO₂ making them more acidic dissolving coral and shells!", img:"🐚❌🌊"},
       ],
-  },
+  }
   science: {
       n1: [
         {q:"What does a microscope do?", opts:["Measures temperature 🌡️", "Magnifies tiny objects up to 1000 times 🔬", "Predicts weather 🌤️", "Measures rainfall 🌧️"], ans:1, fact:"Microscopes reveal bacteria cells and soil organisms invisible to the naked eye!", img:"🔬✨🦠"},
@@ -2742,7 +2742,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is the water footprint of food production?", opts:["How wet food is 💧", "Total water used to produce food from farm to fork 💧🌾", "Only irrigation water 💧", "Only rainfall 🌧️"], ans:1, fact:"A kilogram of beef uses 15,000 litres of water — understanding this helps save water!", img:"💧🌾📊"},
         {q:"What is synthetic biology?", opts:["Fake food 🍽️", "Engineering microorganisms to produce real food ingredients like proteins 🧬", "Organic farming 🌿", "Artificial fertilizers 🧪"], ans:1, fact:"Lab-grown meat and microbial proteins could feed billions using a fraction of land and water!", img:"🧬🥩💡"},
       ],
-  },
+  }
   animals: {
       n1: [
         {q:"Which animal pollinates most food crops?", opts:["Lion 🦁", "Bee 🐝", "Shark 🦈", "Eagle 🦅"], ans:1, fact:"Bees pollinate over 70% of food crops — without them no apples almonds or many vegetables!", img:"🐝🌸🍎"},
@@ -3192,7 +3192,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is a symbiotic relationship?", opts:["Animals competing 🦁", "A close beneficial relationship between two different species 🌺🐝", "Animals living alone 🐾", "Plants and animals competing 🌿"], ans:1, fact:"Bees and flowers have mutualistic symbiosis — bees get nectar flowers get pollinated!", img:"🌺🐝✅"},
         {q:"What is community-based conservation?", opts:["Government conservation only 🏛️", "Local communities protecting and benefiting from wildlife and natural resources 🤝🌍", "Only for tourists 📸", "Only in national parks 🌳"], ans:1, fact:"Successful conservation requires local communities to see wildlife as valuable and worth protecting!", img:"🤝🌍🇳🇬"},
       ],
-  },
+  }
   soil: {
       n1: [
         {q:"What is soil made of?", opts:["Only sand 🏖️", "Rock particles dead organisms water air and billions of living creatures 🌍", "Only clay 🏺", "Only water 💧"], ans:1, fact:"Healthy soil is a living ecosystem — one teaspoon contains more organisms than people on Earth!", img:"🌍🪱🔬"},
@@ -3642,7 +3642,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is a cover crop?", opts:["A crop covering another 🌾", "A crop grown between seasons to protect soil and add nutrients 🌿", "A greenhouse crop 🌿", "A very tall crop 🌳"], ans:1, fact:"Mucuna and cowpea cover crops protect Nigerian farmers' soil from erosion and add free nitrogen!", img:"🌿🌾✅"},
         {q:"What is the soil food web?", opts:["A spider web in soil 🕸️", "Complex network of organisms living in and processing soil 🪱", "A type of composting ♻️", "A soil test 🧪"], ans:1, fact:"Bacteria → fungi → nematodes → mites → beetles → earthworms — each cycles nutrients!", img:"🪱🔬🌍"},
       ],
-  },
+  }
   french: {
       n1: [
         {q:"Comment dit-on 'apple' en français?", opts:["Banane 🍌", "Pomme 🍎", "Orange 🍊", "Mangue 🥭"], ans:1, fact:"Une pomme is apple! La pomme est rouge et délicieuse!", img:"🍎🇫🇷✨"},
@@ -4092,7 +4092,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"Comment dit-on 'cloud' en français?", opts:["La pluie 🌧️", "Le soleil ☀️", "Le nuage ☁️", "Le vent 💨"], ans:2, fact:"Le nuage is cloud! Les nuages portent la pluie et régulent la température!", img:"☁️🇫🇷🌧️"},
         {q:"Comment dit-on 'pollution' en français?", opts:["La solution ✅", "La pollution ☠️", "La révolution 🔄", "L'évolution 🧬"], ans:1, fact:"La pollution nuit à l'environnement — réduisons nos déchets pour protéger la nature!", img:"☠️🇫🇷❌"},
       ],
-  },
+  }
   weather: {
       n1: [
         {q:"What is sunny weather?", opts:["When it rains 🌧️", "When the sun shines brightly with clear skies ☀️", "When it snows ❄️", "When it is very windy 💨"], ans:1, fact:"Sunny weather means the sun is shining — great for playing outside and for plant growth!", img:"☀️😊🌿"},
@@ -4542,7 +4542,7 @@ const QB: Record<Cat,Record<Grade,Q[]>> = {
         {q:"What is wind chill?", opts:["Just cold wind 💨", "How much colder the air feels to humans because wind removes body heat 🌡️", "Actual air temperature 🌡️", "A type of frost ❄️"], ans:1, fact:"At cold temperatures with strong wind it can feel much colder — wind chill causes frostbite!", img:"💨🌡️❄️"},
         {q:"What is storm surge?", opts:["Ocean waves 🌊", "A rise in sea level caused by tropical storms pushing water toward the coast 🌊⚠️", "A type of rainfall 🌧️", "A type of flooding 🌊"], ans:1, fact:"Storm surges threaten Nigeria's coastal communities during intense weather events!", img:"🌊⚠️🇳🇬"},
       ],
-  },
+  }
 }
 
 
@@ -4721,7 +4721,6 @@ export default function SproutsPlayzone() {
     .opt-btn:hover:not(:disabled){transform:scale(1.03)!important;filter:brightness(1.15)!important}
     .go-btn:hover:not(:disabled){transform:translateY(-4px)!important;box-shadow:0 20px 40px rgba(11,232,129,.5)!important}
     .name-inp:focus{border-color:#0be881!important;box-shadow:0 0 0 3px rgba(11,232,129,.2)!important}
-    @media(min-width:600px){.grade-grid{grid-template-columns:repeat(4,1fr)!important}.cat-grid{grid-template-columns:repeat(5,1fr)!important}}
   `
 
   const lad_colors = ['','#0be881','#ffd32a','#ff6b9d']
@@ -4745,7 +4744,7 @@ export default function SproutsPlayzone() {
       <div style={{background:'linear-gradient(90deg,#0a2a14,#0d3d1a,#0a2a14)',padding:'10px 20px',
         display:'flex',alignItems:'center',justifyContent:'space-between',
         borderBottom:'2px solid #0be881',position:'sticky',top:0,zIndex:50}}>
-        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1rem',color:'#fff',letterSpacing:0,whiteSpace:'nowrap'}}>
+        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.2rem',color:'#fff',letterSpacing:1}}>
           🌿 LIFEWS<span style={{color:'#0be881'}}>Connect</span> · PlayZone
         </div>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -4765,7 +4764,7 @@ export default function SproutsPlayzone() {
         </div>
       </div>
 
-      <div style={{maxWidth:960,margin:'0 auto',padding:'12px 10px'}}>
+      <div style={{maxWidth:960,margin:'0 auto',padding:'20px 14px'}}>
 
         {/* ===== NAME SCREEN ===== */}
         {screen==='name' && (
@@ -4816,15 +4815,15 @@ export default function SproutsPlayzone() {
               </h1>
               <p style={{color:'#7db8cc',fontWeight:700}}>Questions are perfectly matched to your level 🎯 · You need 9/10 to unlock next ladder!</p>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,marginBottom:16}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
               {GRADES.map(g=>(
                 <div key={g.id} className="grade-card"
                   onClick={()=>{setGrade(g.id);setUsedIdxs([]);setLadderScores([]);setScreen('cat')}}
                   style={{background:`linear-gradient(135deg,${g.color}22,${g.color}11)`,
-                    border:`2.5px solid ${g.color}`,borderRadius:18,padding:'14px 8px',
+                    border:`2.5px solid ${g.color}`,borderRadius:18,padding:'18px 10px',
                     textAlign:'center',transition:'all .28s'}}>
-                  <div style={{fontSize:'1.8rem',marginBottom:4}}>{g.emoji}</div>
-                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.88rem',color:g.color,marginBottom:2}}>{g.label}</div>
+                  <div style={{fontSize:'2rem',marginBottom:6}}>{g.emoji}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.95rem',color:g.color,marginBottom:2}}>{g.label}</div>
                   <div style={{fontSize:'0.65rem',color:g.color+'99',fontWeight:700}}>{g.desc}</div>
                 </div>
               ))}
@@ -4847,17 +4846,17 @@ export default function SproutsPlayzone() {
                 ← Back
               </button>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}}>
               {CATS.map(c=>(
                 <div key={c.id} className="cat-card"
                   onClick={()=>{setCat(c.id);setUsedIdxs([]);setLadder(1);setTimeout(()=>startLadder(1,[]),50)}}
-                  style={{background:c.bg,border:`2.5px solid ${c.color}`,borderRadius:16,
-                    padding:'12px 8px',textAlign:'center',cursor:'pointer',transition:'all .28s',
+                  style={{background:c.bg,border:`2.5px solid ${c.color}`,borderRadius:20,
+                    padding:'18px 8px',textAlign:'center',cursor:'pointer',transition:'all .28s',
                     boxShadow:`0 4px 20px ${c.color}22`}}>
                   <div style={{fontSize:'1rem',letterSpacing:2,marginBottom:8,lineHeight:1.4,
                     background:`${c.color}15`,borderRadius:10,padding:'6px 4px'}}>{c.scene}</div>
-                  <div style={{fontSize:'1.6rem',marginBottom:4}}>{c.icon}</div>
-                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.78rem',color:c.color,lineHeight:1.2}}>{c.name}</div>
+                  <div style={{fontSize:'1.8rem',marginBottom:5}}>{c.icon}</div>
+                  <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'0.82rem',color:c.color,lineHeight:1.2}}>{c.name}</div>
                 </div>
               ))}
             </div>
@@ -4902,7 +4901,7 @@ export default function SproutsPlayzone() {
                   <div style={{fontSize:'0.65rem',color:catInfo.color+'99',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Look carefully 👀</div>
                 </div>
               )}
-              <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.1rem',color:'#fff',lineHeight:1.4,marginBottom:16}}>{q.q}</div>
+              <div style={{fontFamily:"'Fredoka One',cursive",fontSize:'1.3rem',color:'#fff',lineHeight:1.4,marginBottom:20}}>{q.q}</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                 {q.opts.map((opt,i)=>{
                   const isC = i===q.ans
@@ -4916,7 +4915,7 @@ export default function SproutsPlayzone() {
                   return(
                     <button key={i} className={!answered?'opt-btn':''} onClick={()=>pick(i)} disabled={answered}
                       style={{background:bg,border,borderRadius:14,padding:'14px 10px',textAlign:'center',
-                        fontSize:'0.85rem',fontWeight:800,color,cursor:answered?'default':'pointer',
+                        fontSize:'0.9rem',fontWeight:800,color,cursor:answered?'default':'pointer',
                         lineHeight:1.4,transition:'all .2s',fontFamily:'inherit',animation:anim}}>
                       {opt}
                     </button>
